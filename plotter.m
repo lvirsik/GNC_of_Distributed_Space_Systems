@@ -7,6 +7,10 @@ function plotter(result, graphics_settings)
         compare_numerical_vs_kepler(result)
     end
 
+    if graphics_settings.plot_relative_position_deputy
+        plot_relative_position_deputy(result)
+    end
+
     if graphics_settings.plot_orbital_elements.base_elems
         plot_orbital_elements(result, graphics_settings)
     end
@@ -86,6 +90,32 @@ function plot_orbit_eci(result)
     title('ECI Trajectory');
     view(3);
     axis equal;
+end
+
+function plot_relative_position_deputy(result)
+    rho = result.relative_state_history(:, 1:6);
+    R = rho(:,1); T = rho(:,2); N = rho(:,3);
+    Rv = rho(:,4); Tv = rho(:,5); Nv = rho(:,6);
+
+    figure;
+    hold on;
+    plot3(T, N, R, 'b', 'LineWidth', 2);
+    xlabel('Tangential (m)');
+    ylabel('Normal (m)');
+    zlabel('Radial (m)');
+    title('Deputy Trajectory in RTN Frame');
+    grid on;
+    view(3);
+
+    figure;
+    hold on;
+    plot3(Tv*100, Nv*100, Rv*100, 'r', 'LineWidth', 2);
+    xlabel('Tangential (m)');
+    ylabel('Normal (m)');
+    zlabel('Radial (m)');
+    title('Deputy Velocity in RTN Frame');
+    grid on;
+    view(3);
 end
 
 function plot_orbital_elements(result, graphics_settings)

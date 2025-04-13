@@ -92,29 +92,29 @@ classdef util
             end
         end
 
-        function state_rtn = ECI2RTN(state_eci)
-            r_eci = state_eci(1:3)';
-            v_eci = state_eci(4:6)';
+        function state_rtn = ECI2RTN(state_eci, reference_state_eci)
+            r_eci = reference_state_eci(1:3);
+            v_eci = reference_state_eci(4:6);
             n = cross(r_eci, v_eci);
 
             R = r_eci / norm(r_eci);
             N = n / norm(n);
             T = cross(N, R);
 
-            R_eci2rtn = [R, T, N];
+            R_eci2rtn = inv([R, T, N]);
+            diff = state_eci(1:3) - reference_state_eci(1:3);
 
-            r_rtn = R_eci2rtn * r_eci;
-
+            r_rtn = R_eci2rtn * diff;
+            
             f_dot = norm(cross(r_eci, v_eci)) / norm(r_eci)^2;
             w = [0,0,f_dot]';
-            v_rtn = (R_eci2rtn * v_eci) - cross(w, r_rtn);
-
+            v_rtn =  R_eci2rtn * state_eci(4:6) - cross(w, r_rtn);
             state_rtn = [r_rtn; v_rtn];
         end
 
-        function R_eci2rtn = R_ECI2RTN(state_eci)
-            r_eci = state_eci(1:3)';
-            v_eci = state_eci(4:6)';
+        function R_eci2rtn = R_ECI2RTN(reference_state_eci)
+            r_eci = reference_state_eci(1:3)';
+            v_eci = reference_state_eci(4:6)';
             n = cross(r_eci, v_eci);
 
             R = r_eci / norm(r_eci);

@@ -1,6 +1,7 @@
 classdef simulator
     properties
         initial_conditions
+        initial_conditions_deputy
         time_span
         dt
         simulation_settings
@@ -8,8 +9,9 @@ classdef simulator
     end
 
     methods
-        function self = simulator(initial_conditions, num_orbits, time_step, simulation_settings, graphics_settings)
-            self.initial_conditions = initial_conditions;
+        function self = simulator(initial_conditions_chief, initial_conditions_deputy, num_orbits, time_step, simulation_settings, graphics_settings)
+            self.initial_conditions = initial_conditions_chief;
+            self.initial_conditions_deputy = initial_conditions_deputy;
             time = (num_orbits * (2*pi*sqrt(self.initial_conditions(1)^3 / constants.mu)));
             time_span = 0:time_step:time;
             self.dt = time_step;
@@ -29,24 +31,32 @@ classdef simulator
             result.dt = self.dt;
 
             if self.simulation_settings.numerical_propogation
-                initial_state = util.OE2ECI(a, e, i, RAAN, w, v);
+                initial_state_eci = util.OE2ECI(a, e, i, RAAN, w, v);
 
                 % Perform Simulation
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
-                [t, state_history_num] = ode45(@(t, state_history_num) dynamics(t, state_history_num, self.simulation_settings), self.time_span, initial_state, options);
-                result.state_history_num = state_history_num;
-                result.t_num = t;
+                if self.simulation_settings.deputy
+                    initial_state = [self.initial_conditions_deputy; initial_state_eci];
+                    [t, state_history] = ode45(@(t, state_history) dynamics.dynamics_with_relative(t, state_history, self.simulation_settings), self.time_span, initial_state, options);
+                    result.state_history_num = state_history(:, 7:12);
+                    result.relative_state_history = state_history(:, 1:6);
+                    result.t_num = t;
+                else
+                    [t, state_history_num] = ode45(@(t, state_history_num) dynamics.two_body_dynamics(t, state_history_num, self.simulation_settings), self.time_span, initial_state_eci, options);
+                    result.state_history_num = state_history_num;
+                    result.t_num = t;
+                end
 
                 % Gather orbital element history and other interesting information
-                oe_history = zeros(length(state_history_num), 6);
-                ecc_vector_history = zeros(length(state_history_num), 3);
-                ang_mom_history = zeros(length(state_history_num), 3);
-                energy_history = zeros(length(state_history_num), 1);
-                for j = 1:length(state_history_num)
-                    oe_history(j, :) = util.ECI2OE(state_history_num(j, :));
-                    ecc_vector_history(j, :) = util.get_ecc_vector(state_history_num(j, :));
-                    ang_mom_history(j, :) = util.get_ang_momentum(state_history_num(j, :));
-                    energy_history(j, :) = util.get_energy(state_history_num(j, :));
+                oe_history = zeros(length(result.state_history_num), 6);
+                ecc_vector_history = zeros(length(result.state_history_num), 3);
+                ang_mom_history = zeros(length(result.state_history_num), 3);
+                energy_history = zeros(length(result.state_history_num), 1);
+                for j = 1:length(result.state_history_num)
+                    oe_history(j, :) = util.ECI2OE(result.state_history_num(j, :));
+                    ecc_vector_history(j, :) = util.get_ecc_vector(result.state_history_num(j, :));
+                    ang_mom_history(j, :) = util.get_ang_momentum(result.state_history_num(j, :));
+                    energy_history(j, :) = util.get_energy(result.state_history_num(j, :));
                 end
                 result.oe_history = oe_history;
                 result.ecc_vector_history = ecc_vector_history;
