@@ -2,13 +2,17 @@ classdef simulator
     properties
         initial_conditions
         time_span
+        dt
         simulation_settings
         graphics_settings
     end
 
     methods
-        function self = simulator(initial_conditions, time_span, simulation_settings, graphics_settings)
+        function self = simulator(initial_conditions, num_orbits, time_step, simulation_settings, graphics_settings)
             self.initial_conditions = initial_conditions;
+            time = (num_orbits * (2*pi*sqrt(self.initial_conditions(1)^3 / constants.mu)));
+            time_span = 0:time_step:time;
+            self.dt = time_step;
             self.time_span = time_span;
             self.simulation_settings = simulation_settings;
             self.graphics_settings = graphics_settings;
@@ -22,13 +26,14 @@ classdef simulator
             w = deg2rad(self.initial_conditions(5));
             v = deg2rad(self.initial_conditions(6));
             result.initial_conditions = self.initial_conditions;
+            result.dt = self.dt;
 
             if self.simulation_settings.numerical_propogation
                 initial_state = util.OE2ECI(a, e, i, RAAN, w, v);
 
                 % Perform Simulation
-                options = odeset('RelTol', 1e-7, 'AbsTol', 1e-9);
-                [t, state_history_num] = ode45(@(t, state_history_num) dynamics(t, state_history_num, self.simulation_settings), [0 self.time_span(end)], initial_state, options);
+                options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
+                [t, state_history_num] = ode45(@(t, state_history_num) dynamics(t, state_history_num, self.simulation_settings), self.time_span, initial_state, options);
                 result.state_history_num = state_history_num;
                 result.t_num = t;
 
@@ -51,15 +56,14 @@ classdef simulator
 
             if self.simulation_settings.keplerian_propogation
                 n = sqrt(constants.mu / a ^ 3);
-                dt = self.time_span(2) - self.time_span(1);
                 state_history_kep = zeros(length(self.time_span), 6);
                 for j=1:length(self.time_span)
                     state_kep = util.OE2ECI(a, e, i, RAAN, w, v);
                     state_history_kep(j,:) = state_kep';
                     E = 2 * atan2(tan(v/2) * sqrt((1 - e) / (1 + e)), 1);
                     M = E - e*sin(E);
-                    M_new = M + (n * dt);
-                    E_new = util.MtoE(M_new, e, 10^(-6));
+                    M_new = M + (n * self.dt);
+                    E_new = util.MtoE(M_new, e, 10^(-9));
                     v_new = 2 * atan2(sqrt((1 + e) / (1 - e)) * tan(E_new / 2), 1);
                     v = v_new;
                 end

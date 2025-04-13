@@ -111,5 +111,17 @@ classdef util
 
             state_rtn = [r_rtn; v_rtn];
         end
+
+        function R_eci2rtn = R_ECI2RTN(state_eci)
+            r_eci = state_eci(1:3)';
+            v_eci = state_eci(4:6)';
+            n = cross(r_eci, v_eci);
+
+            R = r_eci / norm(r_eci);
+            N = n / norm(n);
+            T = cross(N, R);
+
+            R_eci2rtn = [R, T, N];
+        end
     end
  end
