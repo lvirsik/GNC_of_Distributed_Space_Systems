@@ -1,7 +1,3 @@
-clear all;
-close all;
-clc;
-
 % Input initial conditions in orbital elments. Units of meters and degrees
 initial_conditions_chief = [6780000, 0.0006, 51.6, 0, 0, 0]; % OEs
 initial_conditions_chief = [6780000, 0, 0, 0, 0, 0]; 
