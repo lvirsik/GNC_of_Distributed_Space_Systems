@@ -251,10 +251,10 @@ function plot_specific_energy(result)
 end
 
 function plot_relative_position_deputy_comparison(result)
-    % For (b) - relative motion from nonlinear equations
+    % For (2b) - relative motion from nonlinear equations
     rho = result.relative_state_history(:, 1:3);
     
-    % For (c) - relative motion computed from differencing individual orbits
+    % For (2c) - relative motion computed from differencing individual orbits
     rho_diff = result.deputy_in_rtn(:, 1:3);
     
     figure;

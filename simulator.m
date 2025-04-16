@@ -47,7 +47,7 @@ classdef simulator
                     result.t_num = t;
                 end
 
-                % Implementation for part (c) - compute deputy orbit from chief orbit
+                % Compute deputy orbit from chief orbit
                 if self.simulation_settings.absolute_deputy
                     % Create initial state for deputy by applying variations to chief
                     % Convert relative state in RTN to ECI

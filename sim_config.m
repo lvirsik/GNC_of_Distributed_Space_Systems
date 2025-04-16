@@ -36,6 +36,5 @@ sim1.run_simulator();
 % Case 2: Create deputy with non-zero difference in semi-major axis
 % This is done by adding a radial velocity component, which changes the energy
 disp('Running Case 2: Non-zero difference in semi-major axis');
-initial_conditions_deputy_case2 = [0; 0; 0; 10; 1; 0];
-sim2 = simulator(initial_conditions_chief, initial_conditions_deputy_case2, num_orbits, time_step, simulation_settings, graphics_settings);
+initial_conditions_deputy_case2 = [0; 0; 0; 10; 1; 0];sim2 = simulator(initial_conditions_chief, initial_conditions_deputy_case2, num_orbits, time_step, simulation_settings, graphics_settings);
 sim2.run_simulator();
