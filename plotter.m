@@ -10,6 +10,14 @@ function plotter(result, graphics_settings)
     if graphics_settings.plot_relative_position_deputy
         plot_relative_position_deputy(result)
     end
+    
+    if isfield(graphics_settings, 'plot_relative_position_deputy_comparison') && graphics_settings.plot_relative_position_deputy_comparison && isfield(result, 'deputy_in_rtn')
+        plot_relative_position_deputy_comparison(result)
+    end
+    
+    if isfield(graphics_settings, 'plot_relative_position_error') && graphics_settings.plot_relative_position_error && isfield(result, 'deputy_in_rtn')
+        plot_relative_position_error(result)
+    end
 
     if graphics_settings.plot_orbital_elements.base_elems
         plot_orbital_elements(result, graphics_settings)
@@ -240,4 +248,67 @@ function plot_specific_energy(result)
     grid on;
     xlabel('Time (hrs)'); ylabel('Specific Energy (J)');
     title('Specific Energy over Time');
+end
+
+function plot_relative_position_deputy_comparison(result)
+    % For (b) - relative motion from nonlinear equations
+    rho = result.relative_state_history(:, 1:3);
+    
+    % For (c) - relative motion computed from differencing individual orbits
+    rho_diff = result.deputy_in_rtn(:, 1:3);
+    
+    figure;
+    hold on;
+    plot3(rho(:,2), rho(:,3), rho(:,1), 'b', 'LineWidth', 2);
+    plot3(rho_diff(:,2), rho_diff(:,3), rho_diff(:,1), 'r--', 'LineWidth', 1.5);
+    xlabel('Tangential (m)');
+    ylabel('Normal (m)');
+    zlabel('Radial (m)');
+    title('Deputy Trajectory in RTN Frame - Methods Comparison');
+    legend('Nonlinear Relative Equations', 'Differencing Individual Orbits');
+    grid on;
+    view(3);
+end
+
+function plot_relative_position_error(result)
+    % Calculate error between nonlinear equations and differencing orbits
+    rho_nonlinear = result.relative_state_history(:, 1:3);
+    rho_differencing = result.deputy_in_rtn(:, 1:3);
+    
+    % Ensure they're the same length for comparison
+    min_length = min(size(rho_nonlinear, 1), size(rho_differencing, 1));
+    rho_nonlinear = rho_nonlinear(1:min_length, :);
+    rho_differencing = rho_differencing(1:min_length, :);
+    
+    % Calculate error in each component
+    error = rho_nonlinear - rho_differencing;
+    
+    % Calculate absolute error
+    abs_error = sqrt(sum(error.^2, 2));
+    
+    % Plot errors
+    figure;
+    subplot(2,1,1);
+    hold on;
+    plot(result.t_num(1:min_length) / (60*60), error(:,1), 'r');
+    plot(result.t_num(1:min_length) / (60*60), error(:,2), 'g');
+    plot(result.t_num(1:min_length) / (60*60), error(:,3), 'b');
+    grid on;
+    xlabel('Time (hrs)');
+    ylabel('Error (m)');
+    title('Component Error Between Nonlinear Equations and Differencing Orbits');
+    legend('Radial Error', 'Tangential Error', 'Normal Error');
+    
+    subplot(2,1,2);
+    plot(result.t_num(1:min_length) / (60*60), abs_error, 'k');
+    grid on;
+    xlabel('Time (hrs)');
+    ylabel('Absolute Error (m)');
+    title('Absolute Error Between Methods');
+    
+    % Display statistics
+    max_error = max(abs_error);
+    mean_error = mean(abs_error);
+    disp(['Maximum absolute error: ', num2str(max_error), ' meters']);
+    disp(['Mean absolute error: ', num2str(mean_error), ' meters']);
 end

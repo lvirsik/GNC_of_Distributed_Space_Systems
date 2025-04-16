@@ -35,7 +35,7 @@ classdef simulator
 
                 % Perform Simulation
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
-                if self.simulation_settings.deputy
+                if self.simulation_settings.relative_deputy
                     initial_state = [self.initial_conditions_deputy; initial_state_eci];
                     [t, state_history] = ode45(@(t, state_history) dynamics.dynamics_with_relative(t, state_history, self.simulation_settings), self.time_span, initial_state, options);
                     result.state_history_num = state_history(:, 7:12);
@@ -45,6 +45,77 @@ classdef simulator
                     [t, state_history_num] = ode45(@(t, state_history_num) dynamics.two_body_dynamics(t, state_history_num, self.simulation_settings), self.time_span, initial_state_eci, options);
                     result.state_history_num = state_history_num;
                     result.t_num = t;
+                end
+
+                % Implementation for part (c) - compute deputy orbit from chief orbit
+                if self.simulation_settings.absolute_deputy
+                    % Create initial state for deputy by applying variations to chief
+                    % Convert relative state in RTN to ECI
+                    rho_RTN = self.initial_conditions_deputy(1:3);
+                    drho_RTN = self.initial_conditions_deputy(4:6);
+                    
+                    % Calculate RTN basis vectors directly
+                    r_chief = initial_state_eci(1:3);
+                    v_chief = initial_state_eci(4:6);
+                    
+                    R_hat = r_chief / norm(r_chief);
+                    h_vec = cross(r_chief, v_chief);
+                    N_hat = h_vec / norm(h_vec);
+                    T_hat = cross(N_hat, R_hat);
+                    
+                    % RTN to ECI transformation matrix (each column is a basis vector)
+                    R_rtn2eci = [R_hat, T_hat, N_hat];
+                    
+                    % Calculate deputy position in ECI
+                    r_deputy_eci = r_chief + R_rtn2eci * rho_RTN;
+                    
+                    % Calculate angular velocity of RTN frame
+                    omega = norm(h_vec) / (norm(r_chief)^2);
+                    omega_vec = omega * N_hat;
+                    
+                    % Calculate deputy velocity in ECI
+                    v_deputy_eci = v_chief + R_rtn2eci * drho_RTN + cross(omega_vec, R_rtn2eci * rho_RTN);
+                    
+                    % Combine to get deputy initial state in ECI
+                    deputy_initial_state_eci = [r_deputy_eci; v_deputy_eci];
+                    
+                    % Propagate deputy orbit using the existing two_body_dynamics
+                    [t_deputy, state_history_deputy] = ode45(@(t, state) dynamics.two_body_dynamics(t, state, self.simulation_settings), self.time_span, deputy_initial_state_eci, options);
+                    
+                    % Transform deputy orbit to RTN frame relative to chief
+                    deputy_in_rtn = zeros(length(t), 6);
+                    for j = 1:length(t)
+                        % Get chief state at this time point
+                        r_chief_j = result.state_history_num(j, 1:3)';
+                        v_chief_j = result.state_history_num(j, 4:6)';
+                        
+                        % Calculate RTN basis vectors
+                        R_hat_j = r_chief_j / norm(r_chief_j);
+                        h_vec_j = cross(r_chief_j, v_chief_j);
+                        N_hat_j = h_vec_j / norm(h_vec_j);
+                        T_hat_j = cross(N_hat_j, R_hat_j);
+                        
+                        % ECI to RTN transformation matrix
+                        R_eci2rtn_j = [R_hat_j, T_hat_j, N_hat_j]';
+                        
+                        % Deputy position and velocity in ECI
+                        r_deputy_j = state_history_deputy(j, 1:3)';
+                        v_deputy_j = state_history_deputy(j, 4:6)';
+                        
+                        % Calculate relative position in RTN
+                        rho_j = R_eci2rtn_j * (r_deputy_j - r_chief_j);
+                        
+                        % Calculate relative velocity in RTN
+                        omega_j = norm(h_vec_j) / (norm(r_chief_j)^2);
+                        omega_vec_j = omega_j * N_hat_j;
+                        drho_j = R_eci2rtn_j * (v_deputy_j - v_chief_j - cross(omega_vec_j, r_deputy_j - r_chief_j));
+                        
+                        deputy_in_rtn(j, :) = [rho_j; drho_j]';
+                    end
+                    
+                    result.deputy_state_history = state_history_deputy;
+                    result.deputy_in_rtn = deputy_in_rtn;
+                    result.t_deputy = t_deputy;
                 end
 
                 % Gather orbital element history and other interesting information
@@ -80,7 +151,7 @@ classdef simulator
                 result.state_history_kep = state_history_kep;
                 result.t_kep = self.time_span;
             end
-            plotter(result, self.graphics_settings)
+            plotter(result, self.graphics_settings);
         end
     end
 end
