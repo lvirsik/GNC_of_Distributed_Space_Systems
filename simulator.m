@@ -47,7 +47,7 @@ classdef simulator
                     result.t_num = t;
                 end
 
-                % Compute deputy orbit from chief orbit
+                % Implementation for part (2c) - compute deputy orbit from chief orbit
                 if self.simulation_settings.absolute_deputy
                     % Create initial state for deputy by applying variations to chief
                     % Convert relative state in RTN to ECI
@@ -116,6 +116,92 @@ classdef simulator
                     result.deputy_state_history = state_history_deputy;
                     result.deputy_in_rtn = deputy_in_rtn;
                     result.t_deputy = t_deputy;
+                    
+                    % Part (2e) and (2f) - Calculate and apply maneuver if requested
+                    if isfield(self.simulation_settings, 'calculate_maneuver') && self.simulation_settings.calculate_maneuver
+                        % Calculate the optimal maneuver to correct the drift
+                        [delta_v, optimal_time_index, maneuver_point] = self.calculate_drift_correction(result.deputy_state_history, result.state_history_num, result.t_num);
+                        
+                        % Save maneuver information
+                        result.maneuver_time = result.t_num(optimal_time_index);
+                        result.maneuver_delta_v = delta_v;
+                        result.maneuver_time_index = optimal_time_index;
+                        result.maneuver_point = maneuver_point;
+                        
+                        % Apply maneuver if requested
+                        if isfield(self.simulation_settings, 'apply_maneuver') && self.simulation_settings.apply_maneuver
+                            % Get the state at maneuver point
+                            maneuver_state = result.deputy_state_history(optimal_time_index, :);
+                            
+                            % Calculate the new velocity after maneuver
+                            v_deputy = maneuver_state(4:6);
+                            v_unit = v_deputy / norm(v_deputy);
+                            
+                            % We need to match chief's semi-major axis
+                            a_chief = util.ECI2OE(result.state_history_num(optimal_time_index, :));
+                            a_chief = a_chief(1);
+                            r_deputy = norm(maneuver_state(1:3));
+                            
+                            % Calculate required velocity magnitude for the desired orbit
+                            v_new_mag = sqrt(constants.mu * (2/r_deputy - 1/a_chief));
+                            v_new = v_unit * v_new_mag;
+                            
+                            % Apply the maneuver
+                            post_maneuver_state = maneuver_state;
+                            post_maneuver_state(4:6) = v_new;
+                            
+                            % Continue propagation from maneuver point
+                            t_remaining = self.time_span(self.time_span > result.t_num(optimal_time_index));
+                            if ~isempty(t_remaining)
+                                [t_post, state_post] = ode45(@(t, state) dynamics.two_body_dynamics(t, state, self.simulation_settings), t_remaining, post_maneuver_state, options);
+                                
+                                % Store post-maneuver trajectory
+                                t_combined = [result.t_num(1:optimal_time_index); t_post];
+                                deputy_combined = [result.deputy_state_history(1:optimal_time_index, :); state_post];
+                                
+                                % Transform post-maneuver trajectory to RTN
+                                deputy_rtn_post = zeros(length(t_post), 6);
+                                for j = 1:length(t_post)
+                                    % Find closest chief state time
+                                    [~, t_idx] = min(abs(result.t_num - t_post(j)));
+                                    
+                                    % Chief state
+                                    r_chief_j = result.state_history_num(t_idx, 1:3)';
+                                    v_chief_j = result.state_history_num(t_idx, 4:6)';
+                                    
+                                    % Calculate RTN basis
+                                    R_hat_j = r_chief_j / norm(r_chief_j);
+                                    h_vec_j = cross(r_chief_j, v_chief_j);
+                                    N_hat_j = h_vec_j / norm(h_vec_j);
+                                    T_hat_j = cross(N_hat_j, R_hat_j);
+                                    
+                                    R_eci2rtn_j = [R_hat_j, T_hat_j, N_hat_j]';
+                                    
+                                    % Deputy state
+                                    r_deputy_j = state_post(j, 1:3)';
+                                    v_deputy_j = state_post(j, 4:6)';
+                                    
+                                    % Calculate relative position
+                                    rho_j = R_eci2rtn_j * (r_deputy_j - r_chief_j);
+                                    
+                                    % Calculate relative velocity
+                                    omega_j = norm(h_vec_j) / (norm(r_chief_j)^2);
+                                    omega_vec_j = omega_j * N_hat_j;
+                                    drho_j = R_eci2rtn_j * (v_deputy_j - v_chief_j - cross(omega_vec_j, r_deputy_j - r_chief_j));
+                                    
+                                    deputy_rtn_post(j, :) = [rho_j; drho_j]';
+                                end
+                                
+                                % Combine trajectories
+                                deputy_rtn_combined = [result.deputy_in_rtn(1:optimal_time_index, :); deputy_rtn_post];
+                                
+                                % Save combined results
+                                result.t_combined = t_combined;
+                                result.deputy_state_combined = deputy_combined;
+                                result.deputy_in_rtn_combined = deputy_rtn_combined;
+                            end
+                        end
+                    end
                 end
 
                 % Gather orbital element history and other interesting information
@@ -152,6 +238,59 @@ classdef simulator
                 result.t_kep = self.time_span;
             end
             plotter(result, self.graphics_settings);
+        end
+        
+        function [delta_v, optimal_time_index, maneuver_point] = calculate_drift_correction(self, deputy_state_history, chief_state_history, t)
+            % Calculate orbital elements for both satellites
+            deputy_oe = zeros(length(t), 6);
+            chief_oe = zeros(length(t), 6);
+            
+            for i = 1:length(t)
+                deputy_oe(i, :) = util.ECI2OE(deputy_state_history(i, :));
+                chief_oe(i, :) = util.ECI2OE(chief_state_history(i, :));
+            end
+            
+            % Calculate semi-major axis difference
+            delta_a = deputy_oe(:, 1) - chief_oe(:, 1);
+            disp(['Current semi-major axis difference: ', num2str(delta_a(end)), ' meters']);
+            
+            % Find points of minimum and maximum radius (approximate apogee/perigee)
+            deputy_radius = zeros(length(t), 1);
+            for i = 1:length(t)
+                deputy_radius(i) = norm(deputy_state_history(i, 1:3));
+            end
+            
+            [~, min_r_idx] = min(deputy_radius);
+            [~, max_r_idx] = max(deputy_radius);
+            
+            % Calculate velocities at these points
+            v_min_r = norm(deputy_state_history(min_r_idx, 4:6));
+            v_max_r = norm(deputy_state_history(max_r_idx, 4:6));
+            
+            % Calculate required velocities for bounded motion
+            a_target = chief_oe(1, 1); % Target semi-major axis = chief's
+            r_min = deputy_radius(min_r_idx);
+            r_max = deputy_radius(max_r_idx);
+            
+            v_req_min_r = sqrt(constants.mu * (2/r_min - 1/a_target));
+            v_req_max_r = sqrt(constants.mu * (2/r_max - 1/a_target));
+            
+            % Calculate delta-v at both locations
+            dv_min_r = abs(v_req_min_r - v_min_r);
+            dv_max_r = abs(v_req_max_r - v_max_r);
+            
+            % Choose the more efficient maneuver
+            if dv_min_r <= dv_max_r
+                delta_v = dv_min_r;
+                optimal_time_index = min_r_idx;
+                maneuver_point = [r_min, t(min_r_idx)];
+                disp(['Optimal maneuver at minimum radius (perigee), delta-v = ', num2str(delta_v), ' m/s']);
+            else
+                delta_v = dv_max_r;
+                optimal_time_index = max_r_idx;
+                maneuver_point = [r_max, t(max_r_idx)];
+                disp(['Optimal maneuver at maximum radius (apogee), delta-v = ', num2str(delta_v), ' m/s']);
+            end
         end
     end
 end

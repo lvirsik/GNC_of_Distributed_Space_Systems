@@ -1,39 +1,215 @@
 function plotter(result, graphics_settings)
+    % Create figures directory in the current working directory
+    figures_dir = 'figures';
+    
+    % Get the case identifier
+    if isfield(result, 'maneuver_delta_v')
+        case_str = 'Case3_';
+    elseif isfield(result, 'deputy_in_rtn') && max(abs(result.deputy_in_rtn(:,1))) > 5000
+        case_str = 'Case2_';
+    else
+        case_str = 'Case1_';
+    end
+    
+    % Counter for figures
+    fig_count = 0;
+    
+    % Close any existing figures to avoid interference
+    close all;
+    
+    % Display all figures and save them
     if graphics_settings.orbit_eci
-        plot_orbit_eci(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'OrbitECI');
+        plot_orbit_eci(result);
+        saveas(fig, ['./figures/', case_str, 'OrbitECI.png']);
     end
 
     if graphics_settings.compare_numerical_vs_kepler
-        compare_numerical_vs_kepler(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'NumVsKep');
+        compare_numerical_vs_kepler(result);
+        saveas(fig, ['./figures/', case_str, 'NumVsKep.png']);
     end
 
     if graphics_settings.plot_relative_position_deputy
-        plot_relative_position_deputy(result)
+        % Position figure
+        fig_count = fig_count + 1;
+        fig_traj = figure('Name', 'RelativeTrajectory');
+        
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,1); T = rho(:,2); N = rho(:,3);
+        
+        hold on;
+        plot3(T, N, R, 'b', 'LineWidth', 2);
+        xlabel('Tangential (m)');
+        ylabel('Normal (m)');
+        zlabel('Radial (m)');
+        title('Deputy Trajectory in RTN Frame');
+        grid on;
+        view(3);
+        
+        saveas(fig_traj, ['./figures/', case_str, 'RelativeTrajectory.png']);
+        
+        % Velocity figure
+        fig_count = fig_count + 1;
+        fig_vel = figure('Name', 'RelativeVelocity');
+        
+        Rv = rho(:,4); Tv = rho(:,5); Nv = rho(:,6);
+        
+        hold on;
+        plot3(Tv*100, Nv*100, Rv*100, 'r', 'LineWidth', 2);
+        xlabel('Tangential (cm/s)');
+        ylabel('Normal (cm/s)');
+        zlabel('Radial (cm/s)');
+        title('Deputy Velocity in RTN Frame');
+        grid on;
+        view(3);
+        
+        saveas(fig_vel, ['./figures/', case_str, 'RelativeVelocity.png']);
     end
     
     if isfield(graphics_settings, 'plot_relative_position_deputy_comparison') && graphics_settings.plot_relative_position_deputy_comparison && isfield(result, 'deputy_in_rtn')
-        plot_relative_position_deputy_comparison(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'MethodsComparison');
+        
+        % For (2b) - relative motion from nonlinear equations
+        rho = result.relative_state_history(:, 1:3);
+        
+        % For (2c) - relative motion computed from differencing individual orbits
+        rho_diff = result.deputy_in_rtn(:, 1:3);
+        
+        hold on;
+        plot3(rho(:,2), rho(:,3), rho(:,1), 'b', 'LineWidth', 2);
+        plot3(rho_diff(:,2), rho_diff(:,3), rho_diff(:,1), 'r--', 'LineWidth', 1.5);
+        xlabel('Tangential (m)');
+        ylabel('Normal (m)');
+        zlabel('Radial (m)');
+        title('Deputy Trajectory in RTN Frame - Methods Comparison');
+        legend('Nonlinear Relative Equations', 'Differencing Individual Orbits');
+        grid on;
+        view(3);
+        
+        saveas(fig, ['./figures/', case_str, 'MethodsComparison.png']);
     end
     
     if isfield(graphics_settings, 'plot_relative_position_error') && graphics_settings.plot_relative_position_error && isfield(result, 'deputy_in_rtn')
-        plot_relative_position_error(result)
+        fig_count = fig_count + 1;
+        fig_error = figure('Name', 'MethodsError');
+        
+        % Calculate error between nonlinear equations and differencing orbits
+        rho_nonlinear = result.relative_state_history(:, 1:3);
+        rho_differencing = result.deputy_in_rtn(:, 1:3);
+        
+        % Ensure they're the same length for comparison
+        min_length = min(size(rho_nonlinear, 1), size(rho_differencing, 1));
+        rho_nonlinear = rho_nonlinear(1:min_length, :);
+        rho_differencing = rho_differencing(1:min_length, :);
+        
+        % Calculate error in each component
+        error = rho_nonlinear - rho_differencing;
+        
+        % Calculate absolute error
+        abs_error = sqrt(sum(error.^2, 2));
+        
+        % Plot errors - using the current figure (fig_error)
+        subplot(2,1,1);
+        hold on;
+        plot(result.t_num(1:min_length) / (60*60), error(:,1), 'r');
+        plot(result.t_num(1:min_length) / (60*60), error(:,2), 'g');
+        plot(result.t_num(1:min_length) / (60*60), error(:,3), 'b');
+        grid on;
+        xlabel('Time (hrs)');
+        ylabel('Error (m)');
+        title('Component Error Between Nonlinear Equations and Differencing Orbits');
+        legend('Radial Error', 'Tangential Error', 'Normal Error');
+        
+        subplot(2,1,2);
+        plot(result.t_num(1:min_length) / (60*60), abs_error, 'k');
+        grid on;
+        xlabel('Time (hrs)');
+        ylabel('Absolute Error (m)');
+        title('Absolute Error Between Methods');
+        
+        % Display statistics
+        max_error = max(abs_error);
+        mean_error = mean(abs_error);
+        disp(['Maximum absolute error: ', num2str(max_error), ' meters']);
+        disp(['Mean absolute error: ', num2str(mean_error), ' meters']);
+        
+        saveas(fig_error, ['./figures/', case_str, 'MethodsError.png']);
+    end
+    
+    if isfield(graphics_settings, 'plot_maneuver_comparison') && graphics_settings.plot_maneuver_comparison && isfield(result, 'deputy_in_rtn_combined')
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'ManeuverComparison');
+        
+        % Check that the necessary fields exist
+        if ~isfield(result, 'deputy_in_rtn_combined')
+            disp('No maneuver applied or combined trajectory not available');
+        else
+            % Original trajectory (pre-maneuver)
+            rho_original = result.deputy_in_rtn(:, 1:3);
+            
+            % Combined trajectory (with maneuver)
+            rho_combined = result.deputy_in_rtn_combined(:, 1:3);
+            
+            % Find maneuver point
+            maneuver_idx = result.maneuver_time_index;
+            maneuver_point = rho_original(maneuver_idx, :);
+            
+            hold on;
+            plot3(rho_original(:,2), rho_original(:,3), rho_original(:,1), 'r', 'LineWidth', 1.5);
+            plot3(rho_combined(:,2), rho_combined(:,3), rho_combined(:,1), 'b', 'LineWidth', 1.5);
+            plot3(maneuver_point(2), maneuver_point(3), maneuver_point(1), 'go', 'MarkerSize', 8, 'MarkerFaceColor', 'g');
+            
+            xlabel('Tangential (m)');
+            ylabel('Normal (m)');
+            zlabel('Radial (m)');
+            title('Deputy Trajectory Before and After Maneuver');
+            legend('Original Trajectory (Unbounded)', 'Post-Maneuver Trajectory (Bounded)', 'Maneuver Location');
+            grid on;
+            view(3);
+            
+            % Display maneuver information
+            annotation('textbox', [0.15, 0.05, 0.7, 0.1], 'String', ...
+                {['Maneuver at t = ', num2str(result.maneuver_time/3600, '%.2f'), ' hours'], ...
+                 ['Delta-v magnitude = ', num2str(result.maneuver_delta_v, '%.4f'), ' m/s']}, ...
+                'FitBoxToText', 'on', 'BackgroundColor', 'white');
+        end
+        
+        saveas(fig, ['./figures/', case_str, 'ManeuverComparison.png']);
     end
 
     if graphics_settings.plot_orbital_elements.base_elems
-        plot_orbital_elements(result, graphics_settings)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'OrbitalElements');
+        plot_orbital_elements(result, graphics_settings);
+        saveas(fig, ['./figures/', case_str, 'OrbitalElements.png']);
     end
 
     if graphics_settings.plot_eccentricity_vector
-        plot_eccentricity_vector(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'EccentricityVector');
+        plot_eccentricity_vector(result);
+        saveas(fig, ['./figures/', case_str, 'EccentricityVector.png']);
     end
 
     if graphics_settings.plot_ang_momentum_vector
-        plot_ang_momentum_vector(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'AngularMomentum');
+        plot_ang_momentum_vector(result);
+        saveas(fig, ['./figures/', case_str, 'AngularMomentum.png']);
     end
 
     if graphics_settings.plot_specific_energy
-        plot_specific_energy(result)
+        fig_count = fig_count + 1;
+        fig = figure('Name', 'SpecificEnergy');
+        plot_specific_energy(result);
+        saveas(fig, ['./figures/', case_str, 'SpecificEnergy.png']);
     end
+    
+    disp(['Generated ' num2str(fig_count) ' figures and saved them to ./figures/ directory']);
 end
 
 function compare_numerical_vs_kepler(result)
@@ -59,14 +235,12 @@ function compare_numerical_vs_kepler(result)
         error_rtn(j, :) = [r_rtn_kep; v_rtn_kep] - [r_rtn_num; v_rtn_num];
     end
     
-    figure;
     hold on;
     plot(t/(60*60), error_rtn)
     xlabel('Time (hrs)');
     ylabel('Absolute Error (m and m/s)');
     title('Absolute Error vs Time, RTN Frame');
     legend('Error R_r', 'Error R_t', 'Error R_n', 'Error V_r', 'Error V_t', 'Error V_n');
-
 end
 
 function plot_orbit_eci(result)
@@ -83,8 +257,6 @@ function plot_orbit_eci(result)
     ye = constants.earth_radius * ye;
     ze = constants.earth_radius * ze;
 
-    figure;
-
     % Plot Earth
     surf(xe, ye, ze, 'FaceColor', 'blue', 'EdgeColor', 'none');
     hold on;
@@ -98,32 +270,6 @@ function plot_orbit_eci(result)
     title('ECI Trajectory');
     view(3);
     axis equal;
-end
-
-function plot_relative_position_deputy(result)
-    rho = result.relative_state_history(:, 1:6);
-    R = rho(:,1); T = rho(:,2); N = rho(:,3);
-    Rv = rho(:,4); Tv = rho(:,5); Nv = rho(:,6);
-
-    figure;
-    hold on;
-    plot3(T, N, R, 'b', 'LineWidth', 2);
-    xlabel('Tangential (m)');
-    ylabel('Normal (m)');
-    zlabel('Radial (m)');
-    title('Deputy Trajectory in RTN Frame');
-    grid on;
-    view(3);
-
-    figure;
-    hold on;
-    plot3(Tv*100, Nv*100, Rv*100, 'r', 'LineWidth', 2);
-    xlabel('Tangential (m)');
-    ylabel('Normal (m)');
-    zlabel('Radial (m)');
-    title('Deputy Velocity in RTN Frame');
-    grid on;
-    view(3);
 end
 
 function plot_orbital_elements(result, graphics_settings)
@@ -145,14 +291,12 @@ function plot_orbital_elements(result, graphics_settings)
             e_j2 = result.initial_conditions(2);
             i_j2 = result.initial_conditions(3);
             RAAN_j2 = result.initial_conditions(4) - (K * t(j) * cos(i(j)));
-            w_j2 = result.initial_conditions(5) + ((K / 2) * t(j) * ((5 * (cos(i(j)) ^ 2)) - 1));
-            r = util.OE2ECI(a(j), e(j), i(j), RAAN(j), omega(j), nu(j));
+            w_j2 = result.initial_conditions(5) + ((K / 2) * t(j) * ((5 * (cos(i(j)) ^ 2)) - 1)); r = util.OE2ECI(a(j), e(j), i(j), RAAN(j), omega(j), nu(j));
             v_j2 = result.initial_conditions(5) + (result.dt * ((sqrt(constants.mu * a(j)*(1 - e(j)^2)) / norm(r(1:3))^2) - ((K/2) * (5*cos(i(j))^2 - 1))));
             J2_analytical(j, :) = [a_j2, e_j2, i_j2, RAAN_j2, w_j2, v_j2];
         end
     end
 
-    figure;
     tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
 
     nexttile;
@@ -218,7 +362,6 @@ function plot_orbital_elements(result, graphics_settings)
 end
 
 function plot_eccentricity_vector(result)
-    figure;
     hold on
     plot(result.t_num / (60*60), result.ecc_vector_history(:,1), 'r'); 
     plot(result.t_num / (60*60), result.ecc_vector_history(:,2), 'g');
@@ -230,7 +373,6 @@ function plot_eccentricity_vector(result)
 end
 
 function plot_ang_momentum_vector(result)
-    figure;
     hold on
     plot(result.t_num / (60*60), result.ang_mom_history(:,1), 'r'); 
     plot(result.t_num / (60*60), result.ang_mom_history(:,2), 'g');
@@ -242,73 +384,9 @@ function plot_ang_momentum_vector(result)
 end
 
 function plot_specific_energy(result)
-    figure;
     hold on
     plot(result.t_num / (60*60), result.energy_history, 'b'); 
     grid on;
     xlabel('Time (hrs)'); ylabel('Specific Energy (J)');
     title('Specific Energy over Time');
-end
-
-function plot_relative_position_deputy_comparison(result)
-    % For (2b) - relative motion from nonlinear equations
-    rho = result.relative_state_history(:, 1:3);
-    
-    % For (2c) - relative motion computed from differencing individual orbits
-    rho_diff = result.deputy_in_rtn(:, 1:3);
-    
-    figure;
-    hold on;
-    plot3(rho(:,2), rho(:,3), rho(:,1), 'b', 'LineWidth', 2);
-    plot3(rho_diff(:,2), rho_diff(:,3), rho_diff(:,1), 'r--', 'LineWidth', 1.5);
-    xlabel('Tangential (m)');
-    ylabel('Normal (m)');
-    zlabel('Radial (m)');
-    title('Deputy Trajectory in RTN Frame - Methods Comparison');
-    legend('Nonlinear Relative Equations', 'Differencing Individual Orbits');
-    grid on;
-    view(3);
-end
-
-function plot_relative_position_error(result)
-    % Calculate error between nonlinear equations and differencing orbits
-    rho_nonlinear = result.relative_state_history(:, 1:3);
-    rho_differencing = result.deputy_in_rtn(:, 1:3);
-    
-    % Ensure they're the same length for comparison
-    min_length = min(size(rho_nonlinear, 1), size(rho_differencing, 1));
-    rho_nonlinear = rho_nonlinear(1:min_length, :);
-    rho_differencing = rho_differencing(1:min_length, :);
-    
-    % Calculate error in each component
-    error = rho_nonlinear - rho_differencing;
-    
-    % Calculate absolute error
-    abs_error = sqrt(sum(error.^2, 2));
-    
-    % Plot errors
-    figure;
-    subplot(2,1,1);
-    hold on;
-    plot(result.t_num(1:min_length) / (60*60), error(:,1), 'r');
-    plot(result.t_num(1:min_length) / (60*60), error(:,2), 'g');
-    plot(result.t_num(1:min_length) / (60*60), error(:,3), 'b');
-    grid on;
-    xlabel('Time (hrs)');
-    ylabel('Error (m)');
-    title('Component Error Between Nonlinear Equations and Differencing Orbits');
-    legend('Radial Error', 'Tangential Error', 'Normal Error');
-    
-    subplot(2,1,2);
-    plot(result.t_num(1:min_length) / (60*60), abs_error, 'k');
-    grid on;
-    xlabel('Time (hrs)');
-    ylabel('Absolute Error (m)');
-    title('Absolute Error Between Methods');
-    
-    % Display statistics
-    max_error = max(abs_error);
-    mean_error = mean(abs_error);
-    disp(['Maximum absolute error: ', num2str(max_error), ' meters']);
-    disp(['Mean absolute error: ', num2str(mean_error), ' meters']);
 end
