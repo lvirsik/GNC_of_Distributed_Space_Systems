@@ -19,31 +19,52 @@ classdef dynamics
             v_dot = a;
 
             statedot = [r_dot; v_dot];
-
         end
 
-        function statedot = dynamics_with_relative(t, state, simulation_settings)
-            % State input is relative state in rtn, followed by chief state in eci
-            rho = state(1:3);
-            drho = state(4:6);
-            chief_state_rtn = util.ECI2RTN(state(7:12), state(7:12));
-            r_0 = [norm(state(7:9)); 0; 0];
-            v_0 = chief_state_rtn(4:6);
+        function statedot = dynamics_relative_deputy(t, t_history, state_d, state_c_history, simulation_settings)
 
-            h = norm(cross(r_0, v_0));
-            omega = h / norm(r_0)^2;
-            omega_dot = -2 * h * v_0(1) / (norm(r_0) ^ 3);
+            % State input is relative state in rtn, chief initial state in 
+            rho = state_d(1:3);
+            drho = state_d(4:6);
+
+            % Extract Closest State
+            [~, idx] = min(abs(t_history - t));
+            closest_state = state_c_history(idx,:)';
+            r_0 = norm(closest_state(1:3));
+
+            h = norm(cross(closest_state(1:3), closest_state(4:6)));
+            omega = h / r_0^2;
+            omega_dot = -2 * h * (dot(closest_state(1:3), closest_state(4:6)) / norm(closest_state(1:3))) / (r_0 ^ 3);
         
-            k = -constants.mu / ((norm(r_0) + rho(1))^2 + rho(2)^2 + rho(3)^2)^(3/2);
-            xddot = k * (norm(r_0) + rho(1)) + (constants.mu / norm(r_0)^2) + (2 * omega * drho(2)) + (omega_dot * rho(2)) + (rho(1) * omega^2);
+            k = -constants.mu / ((r_0 + rho(1))^2 + rho(2)^2 + rho(3)^2)^(3/2);
+            xddot = k * (r_0 + rho(1)) + (constants.mu / r_0^2) + (2 * omega * drho(2)) + (omega_dot * rho(2)) + (rho(1) * omega^2);
             yddot = (k * rho(2)) - (2 * omega * drho(1)) - (omega_dot * rho(1)) + (rho(2) * omega^2);
             zddot = k * rho(3);
 
             ddrho = [xddot; yddot; zddot];
 
-            chief_dot = dynamics.two_body_dynamics(t, state(7:12), simulation_settings);
+            statedot = [drho; ddrho];
+        end
+
+        function [state_history_kep, t_kep] = propagate_keplerian_orbit(a, e, i, RAAN, w, v, time_span, dt)
+            % Propagate orbit using Keplerian motion
+            n = sqrt(constants.mu / a ^ 3);
+            state_history_kep = zeros(length(time_span), 6);
             
-            statedot = [drho; ddrho; chief_dot];
+            for j = 1:length(time_span)
+                state_kep = util.OE2ECI(a, e, i, RAAN, w, v);
+                state_history_kep(j,:) = state_kep';
+                
+                % Update true anomaly for next time step
+                E = 2 * atan2(tan(v/2) * sqrt((1 - e) / (1 + e)), 1);
+                M = E - e*sin(E);
+                M_new = M + (n * dt);
+                E_new = util.MtoE(M_new, e, 10^(-9));
+                v_new = 2 * atan2(sqrt((1 + e) / (1 - e)) * tan(E_new / 2), 1);
+                v = v_new;
+            end
+            
+            t_kep = time_span;
         end
     end
 end
