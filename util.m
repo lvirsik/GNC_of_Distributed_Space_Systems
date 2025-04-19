@@ -1,6 +1,13 @@
 classdef util
     methods (Static)
-        function state_eci = OE2ECI(a, e, i, RAAN, w, v)
+        function state_eci = OE2ECI(state)
+            a = state(1);
+            e = state(2);
+            i = state(3);
+            RAAN = state(4);
+            w = state(5);
+            v = state(6);
+
             p = a * (1 - e^2);
             r = p / (1 + e*cos(v));
             rPQW = [r*cos(v); r*sin(v); 0];
@@ -222,6 +229,16 @@ classdef util
                 optimal_time_index = max_r_idx;
                 maneuver_point = [r_max, t(max_r_idx)];
             end
+        end
+    
+        function hcw_matrix = calculate_hcw_matrix(t, oes)
+            n = sqrt(constants.mu / (oes(1)^3));
+            hcw_matrix = [1, sin(n*t), cos(n*t), 0, 0, 0;
+                        (-3/2)*n*t, 2*cos(n*t), -2*sin(n*t), 1, 0, 0;
+                        0, 0, 0, 0, sin(n*t), cos(n*t);
+                        0, cos(n*t), -sin(n*t), 0, 0, 0;
+                        (-3/2), -2*sin(n*t), -2*cos(n*t), 0, 0, 0;
+                        0, 0, 0, 0, cos(n*t), -sin(n*t)];
         end
     end
 end

@@ -1,7 +1,7 @@
 % Input initial conditions in orbital elments. Units of meters and degrees
 initial_conditions_chief = [6780000, 0.0006, 51.6, 0, 0, 0]; % OEs
 initial_conditions_chief = [6780000, 0, 0, 0, 0, 0]; 
-initial_conditions_deputy = [0; 0; 0; 1; 1; 0];
+initial_conditions_deputy = [0; 0; 0; 1; 5; 0];
 
 % Time step and number of orbits
 num_orbits = 3;
@@ -13,17 +13,19 @@ simulation_settings.keplerian_propogation = false;
 simulation_settings.J2 = false;
 simulation_settings.relative_deputy = true;
 simulation_settings.absolute_deputy = true;
+simulation_settings.hcw_deputy = true;
 
-simulation_settings.create_bounded_motion = true;
+simulation_settings.create_bounded_motion = false;
 
 % Set graphics settings
 graphics_settings.orbit_eci = false;
 graphics_settings.compare_numerical_vs_kepler = false;
 
 graphics_settings.plot_deputy = struct();
-graphics_settings.plot_deputy.relative = false;
-graphics_settings.plot_deputy.absolute = false;
-graphics_settings.plot_deputy.manuvered = true;
+graphics_settings.plot_deputy.relative = true;
+graphics_settings.plot_deputy.absolute = true;
+graphics_settings.plot_deputy.hcw = true;
+graphics_settings.plot_deputy.manuvered = false;
 
 
 graphics_settings.plot_orbital_elements = struct();

@@ -24,7 +24,7 @@ function plotter(result, graphics_settings)
         plot_specific_energy(result);
     end
 
-    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute
+    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw
         plot_deputy(result, graphics_settings);
     end
 
@@ -113,7 +113,7 @@ function plot_orbital_elements(result, graphics_settings)
             e_j2 = result.initial_conditions(2);
             i_j2 = result.initial_conditions(3);
             RAAN_j2 = result.initial_conditions(4) - (K * t(j) * cos(i(j)));
-            w_j2 = result.initial_conditions(5) + ((K / 2) * t(j) * ((5 * (cos(i(j)) ^ 2)) - 1)); r = util.OE2ECI(a(j), e(j), i(j), RAAN(j), omega(j), nu(j));
+            w_j2 = result.initial_conditions(5) + ((K / 2) * t(j) * ((5 * (cos(i(j)) ^ 2)) - 1)); r = util.OE2ECI([a(j), e(j), i(j), RAAN(j), omega(j), nu(j)]);
             v_j2 = result.initial_conditions(5) + (result.dt * ((sqrt(constants.mu * a(j)*(1 - e(j)^2)) / norm(r(1:3))^2) - ((K/2) * (5*cos(i(j))^2 - 1))));
             J2_analytical(j, :) = [a_j2, e_j2, i_j2, RAAN_j2, w_j2, v_j2];
         end
@@ -217,43 +217,62 @@ function plot_deputy(result, graphics_settings)
     % Position figure
     fig_traj = figure('Name', 'RelativeTrajectory');
     hold on;
+    legend_names = [];
     if graphics_settings.plot_deputy.relative
         rho = result.relative_state_history(:, 1:6);
         R = rho(:,1); T = rho(:,2); N = rho(:,3);
         plot3(T, N, R, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
     end
     if graphics_settings.plot_deputy.absolute
         rho = result.absolute_state_history(:, 1:6);
         R1 = rho(:,1); T1 = rho(:,2); N1 = rho(:,3);
-        plot3(T1, N1, R1, '--r', 'LineWidth', 2);
+        plot3(T1, N1, R1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
     end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,1); T2 = rho(:,2); N2 = rho(:,3);
+        plot3(T2, N2, R2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW Dynamics"];
+    end
+
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
     zlabel('Radial (m)');
+    legend(legend_names)
     title('Deputy Trajectory in RTN Frame');
-    legend('Relative Dynamics', '2Body Dynamics') 
     grid on;
     view(3);
 
     % Velocity figure
     fig_vel = figure('Name', 'RelativeVelocity');
     hold on;
+    legend_names = [];
     if graphics_settings.plot_deputy.relative
         rho = result.relative_state_history(:, 1:6);
         Rv = rho(:,4); Tv = rho(:,5); Nv = rho(:,6);
         plot3(Tv, Nv, Rv, 'b', 'LineWidth', 2);
+        legend_names = [legend_names,"Relative Dynamics"];
     end
     if graphics_settings.plot_deputy.absolute
         rho = result.absolute_state_history(:, 1:6);
         Rv1 = rho(:,4); Tv1 = rho(:,5); Nv1 = rho(:,6);
-        plot3(Tv1, Nv1, Rv1, '--r', 'LineWidth', 2);
+        plot3(Tv1, Nv1, Rv1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        Rv2 = rho(:,4); Tv2 = rho(:,5); Nv2 = rho(:,6);
+        plot3(Tv2, Nv2, Rv2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW Dynamics"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');
     zlabel('Radial (m/s)');
     title('Deputy Velocity in RTN Frame');
-    legend('Relative Dynamics', '2Body Dynamics') 
     grid on;
+    legend(legend_names)
     view(3);
 end
 

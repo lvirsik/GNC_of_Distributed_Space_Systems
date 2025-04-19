@@ -37,7 +37,7 @@ classdef simulator
             if self.simulation_settings.numerical_propogation
                 
                 % Initialize Information
-                chief_initial_state_eci = util.OE2ECI(a, e, i, RAAN, w, v);
+                chief_initial_state_eci = util.OE2ECI([a, e, i, RAAN, w, v]);
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
 
                 % Run Propogation for chief satellite
@@ -57,6 +57,15 @@ classdef simulator
                     % Transform deputy orbit to RTN frame relative to chief
                     result.absolute_state_history = util.ECI2RTN_history(deputy_state_history, result.chief_history_num);
                     result.deputy_state_history_eci = deputy_state_history;
+                end
+
+                % If there is a hcw deputy, propogate using hcw equations
+                if self.simulation_settings.hcw_deputy
+                    hcw_deputy_state_history = zeros(length(self.time_span), 6);
+                    for i = 1:length(self.time_span)
+                        hcw_deputy_state_history(i,:) = dynamics.HCW_propogation(self.time_span(i), self.initial_conditions_chief, self.initial_conditions_deputy);
+                    end
+                    result.hcw_state_history = hcw_deputy_state_history;
                 end
 
                 % If there is a desire to manuver deputy to have bounded motion, calculate the manuver

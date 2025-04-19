@@ -52,7 +52,7 @@ classdef dynamics
             state_history_kep = zeros(length(time_span), 6);
             
             for j = 1:length(time_span)
-                state_kep = util.OE2ECI(a, e, i, RAAN, w, v);
+                state_kep = util.OE2ECI([a, e, i, RAAN, w, v]);
                 state_history_kep(j,:) = state_kep';
                 
                 % Update true anomaly for next time step
@@ -65,6 +65,20 @@ classdef dynamics
             end
             
             t_kep = time_span;
+        end
+
+        function state_rtn = HCW_propogation(t, initial_conditions_chief_oes, initial_conditions_deputy_rtn)
+            a = initial_conditions_chief_oes(1);
+            n = sqrt(constants.mu / (a^3));
+            a_matrix = [a, 0, 0, 0, 0, 0;
+                        0, a, 0, 0, 0, 0;
+                        0, 0, a, 0, 0, 0;
+                        0, 0, 0, a*n, 0, 0;
+                        0, 0, 0, 0, a*n, 0;
+                        0, 0, 0, 0, 0, a*n];
+
+            integration_constants = inv(util.calculate_hcw_matrix(0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
+            state_rtn = a_matrix * util.calculate_hcw_matrix(t, initial_conditions_chief_oes) * integration_constants;
         end
     end
 end
