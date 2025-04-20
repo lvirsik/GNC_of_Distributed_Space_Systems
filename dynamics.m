@@ -80,5 +80,20 @@ classdef dynamics
             integration_constants = inv(util.calculate_hcw_matrix(0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
             state_rtn = a_matrix * util.calculate_hcw_matrix(t, initial_conditions_chief_oes) * integration_constants;
         end
+
+        function state_rtn = YA_propogation(f, t, initial_conditions_chief_oes, initial_conditions_deputy_rtn)
+            a = initial_conditions_chief_oes(1);
+            e = initial_conditions_chief_oes(2);
+            n = sqrt(constants.mu / (a^3));
+            nu = sqrt(1 - e^2);
+            a_matrix = [a * nu^2, 0, 0, 0, 0, 0;
+                        0, a * nu^2, 0, 0, 0, 0;
+                        0, 0, a * nu^2, 0, 0, 0;
+                        0, 0, 0, a*n/nu, 0, 0;
+                        0, 0, 0, 0, a*n/nu, 0;
+                        0, 0, 0, 0, 0, a*n/nu];
+            integration_constants = inv(util.calculate_ya_matrix(initial_conditions_chief_oes(6), 0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
+            state_rtn = a_matrix * util.calculate_ya_matrix(f, t, initial_conditions_chief_oes) * integration_constants;
+        end
     end
 end

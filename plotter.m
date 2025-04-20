@@ -24,7 +24,7 @@ function plotter(result, graphics_settings)
         plot_specific_energy(result);
     end
 
-    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw
+    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw || graphics_settings.plot_deputy.ya
         plot_deputy(result, graphics_settings);
     end
 
@@ -236,6 +236,12 @@ function plot_deputy(result, graphics_settings)
         plot3(T2, N2, R2, 'g', 'LineWidth', 2);
         legend_names = [legend_names,"HCW Dynamics"];
     end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
+        plot3(T3, N3, R3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA Dynamics"];
+    end
 
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
@@ -266,6 +272,12 @@ function plot_deputy(result, graphics_settings)
         Rv2 = rho(:,4); Tv2 = rho(:,5); Nv2 = rho(:,6);
         plot3(Tv2, Nv2, Rv2, 'g', 'LineWidth', 2);
         legend_names = [legend_names,"HCW Dynamics"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        Rv3 = rho(:,4); Tv3 = rho(:,5); Nv3 = rho(:,6);
+        plot3(Tv3, Nv3, Rv3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA Dynamics"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');

@@ -65,7 +65,7 @@ classdef util
             n = sqrt(mu/a^3);
             E = atan2((dot(R, V)/(n*a^2)), (1-(r/a)));
             v = 2 * atan(sqrt((1+e)/(1-e)) * tan(E/2));
-            
+
             %Find Angles
             W = [H(1)/h H(2)/h H(3)/h];
             i = atan2(sqrt(W(1)^2 + W(2)^2), W(3));
@@ -239,6 +239,23 @@ classdef util
                         0, cos(n*t), -sin(n*t), 0, 0, 0;
                         (-3/2), -2*sin(n*t), -2*cos(n*t), 0, 0, 0;
                         0, 0, 0, 0, cos(n*t), -sin(n*t)];
+        end
+    
+        function ya_matrix = calculate_ya_matrix(f, t, oes)
+            e = oes(2);
+            a = oes(1);
+            n = sqrt(constants.mu / (a^3));
+            nu = sqrt(1 - e^2);
+            k = 1 + (e * cos(f));
+            kd = -e * sin(f);
+            tau = n * t / (nu^3);
+
+            ya_matrix = [(1/k) + (3*kd*tau/2), sin(f), cos(f), 0, 0, 0;
+                        -3*k*tau/2, (1 + (1/k))*cos(f), -(1 + (1/k))*sin(f), 1/k, 0, 0;
+                        0, 0, 0, 0, (1/k)*sin(f), (1/k)*cos(f);
+                        (kd/2)-(3*(k^2)*(k-1)*tau/2), (k^2)*cos(f), -(k^2)*sin(f), 0, 0, 0;
+                        -(3/2)*(k + (kd*tau*k^2)), -(k^2 + 1)*sin(f), -e-((1+k^2) * cos(f)), -kd, 0, 0;
+                        0, 0, 0, 0, e + cos(f), -sin(f)];
         end
     end
 end

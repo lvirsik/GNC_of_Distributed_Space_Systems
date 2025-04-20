@@ -68,6 +68,16 @@ classdef simulator
                     result.hcw_state_history = hcw_deputy_state_history;
                 end
 
+                % If there is a ya deputy, propogate using ya equations
+                if self.simulation_settings.ya_deputy
+                    ya_deputy_state_history = zeros(length(self.time_span), 6);
+                    for i = 1:length(self.time_span)
+                        chief_oes = util.ECI2OE(result.chief_history_num(i, :));
+                        ya_deputy_state_history(i,:) = dynamics.YA_propogation(chief_oes(6), self.time_span(i), self.initial_conditions_chief, self.initial_conditions_deputy);
+                    end
+                    result.ya_state_history = ya_deputy_state_history;
+                end
+
                 % If there is a desire to manuver deputy to have bounded motion, calculate the manuver
                 if self.simulation_settings.create_bounded_motion
                     [delta_v, optimal_time_index, maneuver_point] = util.calculate_drift_correction(result.deputy_state_history_eci, result.chief_history_num, result.t_num);
