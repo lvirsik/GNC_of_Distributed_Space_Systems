@@ -1,19 +1,19 @@
 % Input initial conditions in orbital elments. Units of meters and degrees
 initial_conditions_chief = [6780000, 0.0006, 51.6, 0, 0, 0]; % OEs
 initial_conditions_chief = [6780000, 0.1, 0, 0, 0, 0]; 
-initial_conditions_deputy = [0; 0; 0; 1; 5; 0];
+initial_conditions_deputy = [0; 10; 0; 1; 0; 0];
 
 % Time step and number of orbits
-num_orbits = 1;
+num_orbits = 15;
 time_step = 1;
 
 % Simulation settings
 simulation_settings.numerical_propogation = true;
 simulation_settings.keplerian_propogation = false;
 simulation_settings.J2 = false;
-simulation_settings.relative_deputy = true;
-simulation_settings.absolute_deputy = true;
-simulation_settings.hcw_deputy = true;
+simulation_settings.relative_deputy = false;
+simulation_settings.absolute_deputy = false;
+simulation_settings.hcw_deputy = false;
 simulation_settings.ya_deputy = true;
 
 simulation_settings.create_bounded_motion = false;
@@ -23,9 +23,9 @@ graphics_settings.orbit_eci = false;
 graphics_settings.compare_numerical_vs_kepler = false;
 
 graphics_settings.plot_deputy = struct();
-graphics_settings.plot_deputy.relative = true;
-graphics_settings.plot_deputy.absolute = true;
-graphics_settings.plot_deputy.hcw = true;
+graphics_settings.plot_deputy.relative = false;
+graphics_settings.plot_deputy.absolute = false;
+graphics_settings.plot_deputy.hcw = false;
 graphics_settings.plot_deputy.ya = true;
 graphics_settings.plot_deputy.manuvered = false;
 

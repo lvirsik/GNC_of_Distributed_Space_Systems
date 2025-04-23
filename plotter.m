@@ -216,6 +216,103 @@ end
 function plot_deputy(result, graphics_settings)
     % Position figure
     fig_traj = figure('Name', 'RelativeTrajectory');
+    subplot(2,2,1);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,1); T = rho(:,2); N = rho(:,3);
+        plot(T, R, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,1); T1 = rho(:,2); N1 = rho(:,3);
+        plot(T1, R1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,1); T2 = rho(:,2); N2 = rho(:,3);
+        plot(T2, R2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
+        plot(T3, R3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Tangential (m)');
+    ylabel('Radial (m)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,2);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,1); T = rho(:,2); N = rho(:,3);
+        plot(N, R, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,1); T1 = rho(:,2); N1 = rho(:,3);
+        plot(N1, R1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,1); T2 = rho(:,2); N2 = rho(:,3);
+        plot(N2, R2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
+        plot(N3, T3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Normal (m)');
+    ylabel('Radial (m)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,3);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,1); T = rho(:,2); N = rho(:,3);
+        plot(T, N, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,1); T1 = rho(:,2); N1 = rho(:,3);
+        plot(T1, N1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,1); T2 = rho(:,2); N2 = rho(:,3);
+        plot(T2, N2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
+        plot(T3, N3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Tangential (m)');
+    ylabel('Normal (m)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,4);
     hold on;
     legend_names = [];
     if graphics_settings.plot_deputy.relative
@@ -234,25 +331,120 @@ function plot_deputy(result, graphics_settings)
         rho = result.hcw_state_history(:, 1:6);
         R2 = rho(:,1); T2 = rho(:,2); N2 = rho(:,3);
         plot3(T2, N2, R2, 'g', 'LineWidth', 2);
-        legend_names = [legend_names,"HCW Dynamics"];
+        legend_names = [legend_names,"HCW"];
     end
     if graphics_settings.plot_deputy.ya
         rho = result.ya_state_history(:, 1:6);
         R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
         plot3(T3, N3, R3, 'c', 'LineWidth', 2);
-        legend_names = [legend_names,"YA Dynamics"];
+        legend_names = [legend_names,"YA"];
     end
-
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
     zlabel('Radial (m)');
     legend(legend_names)
-    title('Deputy Trajectory in RTN Frame');
     grid on;
     view(3);
 
     % Velocity figure
     fig_vel = figure('Name', 'RelativeVelocity');
+    subplot(2,2,1);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,4); T = rho(:,5); N = rho(:,6);
+        plot(T, R, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,4); T1 = rho(:,5); N1 = rho(:,6);
+        plot(T1, R1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,4); T2 = rho(:,5); N2 = rho(:,6);
+        plot(T2, R2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,4); T3 = rho(:,5); N3 = rho(:,6);
+        plot(T3, R3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Tangential Velocity (m/s)');
+    ylabel('Radial Velocity (m/s)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,2);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,4); T = rho(:,5); N = rho(:,6);
+        plot(N, R, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,4); T1 = rho(:,5); N1 = rho(:,6);
+        plot(N1, R1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,4); T2 = rho(:,5); N2 = rho(:,6);
+        plot(N2, R2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,4); T3 = rho(:,5); N3 = rho(:,6);
+        plot(N3, R3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Normal Velocity (m/s)');
+    ylabel('Radial Velocity (m/s)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,3);
+    hold on;
+    legend_names = [];
+    if graphics_settings.plot_deputy.relative
+        rho = result.relative_state_history(:, 1:6);
+        R = rho(:,4); T = rho(:,5); N = rho(:,6);
+        plot(T, N, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Relative Dynamics"];
+    end
+    if graphics_settings.plot_deputy.absolute
+        rho = result.absolute_state_history(:, 1:6);
+        R1 = rho(:,4); T1 = rho(:,5); N1 = rho(:,6);
+        plot(T1, N1, 'r', 'LineWidth', 2);
+        legend_names = [legend_names,"2Body Dynamics"];
+    end
+    if graphics_settings.plot_deputy.hcw
+        rho = result.hcw_state_history(:, 1:6);
+        R2 = rho(:,4); T2 = rho(:,5); N2 = rho(:,6);
+        plot(T2, N2, 'g', 'LineWidth', 2);
+        legend_names = [legend_names,"HCW"];
+    end
+    if graphics_settings.plot_deputy.ya
+        rho = result.ya_state_history(:, 1:6);
+        R3 = rho(:,4); T3 = rho(:,5); N3 = rho(:,6);
+        plot(T3, N3, 'c', 'LineWidth', 2);
+        legend_names = [legend_names,"YA"];
+    end
+    xlabel('Tangential Velocity (m/s)');
+    ylabel('Normal Velocity (m/s)');
+    legend(legend_names)
+    grid on;
+
+    subplot(2,2,4);
     hold on;
     legend_names = [];
     if graphics_settings.plot_deputy.relative
@@ -271,13 +463,13 @@ function plot_deputy(result, graphics_settings)
         rho = result.hcw_state_history(:, 1:6);
         Rv2 = rho(:,4); Tv2 = rho(:,5); Nv2 = rho(:,6);
         plot3(Tv2, Nv2, Rv2, 'g', 'LineWidth', 2);
-        legend_names = [legend_names,"HCW Dynamics"];
+        legend_names = [legend_names,"HCW"];
     end
     if graphics_settings.plot_deputy.ya
         rho = result.ya_state_history(:, 1:6);
         Rv3 = rho(:,4); Tv3 = rho(:,5); Nv3 = rho(:,6);
         plot3(Tv3, Nv3, Rv3, 'c', 'LineWidth', 2);
-        legend_names = [legend_names,"YA Dynamics"];
+        legend_names = [legend_names,"YA"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');
