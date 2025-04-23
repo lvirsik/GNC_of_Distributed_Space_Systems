@@ -29,13 +29,12 @@ graphics_settings.plot_deputy.absolute = false;
 graphics_settings.plot_deputy.hcw = true;
 graphics_settings.plot_deputy.ya = false;
 graphics_settings.plot_deputy.roe = true;
-graphics_settings.plot_deputy.manuvered = false;
 
+graphics_settings.plot_deputy.manuvered = false;
 
 graphics_settings.plot_orbital_elements = struct();
 graphics_settings.plot_orbital_elements.base_elems = false;
 graphics_settings.plot_orbital_elements.J2_mean_analytical_solution = false;
-
 
 graphics_settings.plot_eccentricity_vector = false;
 graphics_settings.plot_ang_momentum_vector = false;
