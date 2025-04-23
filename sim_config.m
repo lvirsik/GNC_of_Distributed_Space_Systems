@@ -12,10 +12,11 @@ simulation_settings.numerical_propogation = true;
 simulation_settings.keplerian_propogation = false;
 simulation_settings.J2 = false;
 simulation_settings.relative_deputy = false;
-simulation_settings.absolute_deputy = false;
+simulation_settings.absolute_deputy = true;
 simulation_settings.hcw_deputy = true;
-simulation_settings.ya_deputy = false;
-simulation_settings.roe_deputy = true;
+simulation_settings.ya_deputy = true;
+simulation_settings.roe_circular_deputy  = true;
+simulation_settings.roe_eccentric_deputy = true;
 
 simulation_settings.create_bounded_motion = false;
 
@@ -25,10 +26,11 @@ graphics_settings.compare_numerical_vs_kepler = false;
 
 graphics_settings.plot_deputy = struct();
 graphics_settings.plot_deputy.relative = false;
-graphics_settings.plot_deputy.absolute = false;
+graphics_settings.plot_deputy.absolute = true;
 graphics_settings.plot_deputy.hcw = true;
-graphics_settings.plot_deputy.ya = false;
-graphics_settings.plot_deputy.roe = true;
+graphics_settings.plot_deputy.ya = true;
+graphics_settings.plot_deputy.roe_circular  = true;
+graphics_settings.plot_deputy.roe_eccentric = true;
 
 graphics_settings.plot_deputy.manuvered = false;
 
