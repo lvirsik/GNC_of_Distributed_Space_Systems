@@ -24,7 +24,7 @@ function plotter(result, graphics_settings)
         plot_specific_energy(result);
     end
 
-    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw || graphics_settings.plot_deputy.ya
+    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw || graphics_settings.plot_deputy.ya || graphics_settings.plot_deputy.roe
         plot_deputy(result, graphics_settings);
     end
 
@@ -242,6 +242,12 @@ function plot_deputy(result, graphics_settings)
         plot3(T3, N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA Dynamics"];
     end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        Rroe = rho(:,1); Troe = rho(:,2); Nroe = rho(:,3);
+        plot3(Troe, Nroe, Rroe, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
+    end
 
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
@@ -278,6 +284,12 @@ function plot_deputy(result, graphics_settings)
         Rv3 = rho(:,4); Tv3 = rho(:,5); Nv3 = rho(:,6);
         plot3(Tv3, Nv3, Rv3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA Dynamics"];
+    end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        Rvroe = rho(:,4); Tvroe = rho(:,5); Nvroe = rho(:,6);
+        plot3(Tvroe, Nvroe, Rvroe, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');

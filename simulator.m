@@ -24,7 +24,7 @@ classdef simulator
             % Convert Initial State to Orbital Elements
             a = self.initial_conditions_chief(1);
             e = self.initial_conditions_chief(2);
-            i = deg2rad(self.initial_conditions_chief(3));
+            incl = deg2rad(self.initial_conditions_chief(3));
             RAAN = deg2rad(self.initial_conditions_chief(4));
             w = deg2rad(self.initial_conditions_chief(5));
             v = deg2rad(self.initial_conditions_chief(6));
@@ -37,7 +37,7 @@ classdef simulator
             if self.simulation_settings.numerical_propogation
                 
                 % Initialize Information
-                chief_initial_state_eci = util.OE2ECI([a, e, i, RAAN, w, v]);
+                chief_initial_state_eci = util.OE2ECI([a, e, incl, RAAN, w, v]);
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
 
                 % Run Propogation for chief satellite
@@ -76,6 +76,18 @@ classdef simulator
                         ya_deputy_state_history(i,:) = dynamics.YA_propogation(chief_oes(6), self.time_span(i), self.initial_conditions_chief, self.initial_conditions_deputy);
                     end
                     result.ya_state_history = ya_deputy_state_history;
+                end
+
+                % If there is a roe deputy, propagate using ROE
+                if self.simulation_settings.roe_deputy
+                    roe_deputy_state_history = zeros(length(self.time_span), 6);
+                    deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
+                    initial_roe = util.calculate_quasi_nonsingular_roe(chief_initial_state_eci, deputy_initial_state_eci);
+                    for idx = 1:length(self.time_span)
+                        chief_oes = util.ECI2OE(result.chief_history_num(idx, :));
+                        roe_deputy_state_history(idx,:) = dynamics.propagate_with_roe(self.time_span(idx), [a, e, incl, RAAN, w, v], initial_roe, chief_oes);
+                    end
+                    result.roe_state_history = roe_deputy_state_history;
                 end
 
                 % If there is a desire to manuver deputy to have bounded motion, calculate the manuver

@@ -95,5 +95,39 @@ classdef dynamics
             integration_constants = inv(util.calculate_ya_matrix(initial_conditions_chief_oes(6), 0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
             state_rtn = a_matrix * util.calculate_ya_matrix(f, t, initial_conditions_chief_oes) * integration_constants;
         end
+
+        function state_rtn = propagate_with_roe(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
+            a = initial_conditions_chief_oes(1);
+            e = initial_conditions_chief_oes(2);
+
+            da = initial_roe(1);
+            dl = initial_roe(2);
+            de_x = initial_roe(3);
+            de_y = initial_roe(4);
+            di_x = initial_roe(5);
+            di_y = initial_roe(6);
+
+            de = sqrt(de_x^2 + de_y^2);
+            di = sqrt(di_x^2 + di_y^2);
+            
+            phi_e = atan2(de_y, de_x);
+            theta_i = atan2(di_y, di_x);
+        
+            u = current_chief_oe(5) + util.TtoM(current_chief_oe(6), e);
+            u0 = initial_conditions_chief_oes(5) + util.TtoM(initial_conditions_chief_oes(6), e);
+            n = sqrt(constants.mu/a^3);
+            
+            delta_u = u - u0 + 2*pi*floor(n*t/(2*pi));
+
+            dr_r = a * (da - de * cos(u - phi_e));
+            dr_t = a * (dl - 1.5 * da * delta_u + 2 * de * sin(u - phi_e));
+            dr_n = a * (di * sin(u - theta_i));
+
+            dv_r = a * n * (de * sin(u - phi_e));
+            dv_t = a * n * (-1.5 * da + 2 * de * cos(u - phi_e));
+            dv_n = a * n * (di * cos(u - theta_i));
+        
+            state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
+        end
     end
 end

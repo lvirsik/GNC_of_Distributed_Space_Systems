@@ -69,6 +69,9 @@ classdef util
             %Find Angles
             W = [H(1)/h H(2)/h H(3)/h];
             i = atan2(sqrt(W(1)^2 + W(2)^2), W(3));
+            if i == 0
+                i = i + 0.0000001;
+            end
             RAAN = atan2(W(1), -W(2));
             w = atan2((R(3)/sin(i)), R(1)*cos(RAAN)+R(2)*sin(RAAN)) - v;
             if rad2deg(w) > 180
@@ -256,6 +259,47 @@ classdef util
                         (kd/2)-(3*(k^2)*(k-1)*tau/2), (k^2)*cos(f), -(k^2)*sin(f), 0, 0, 0;
                         -(3/2)*(k + (kd*tau*k^2)), -(k^2 + 1)*sin(f), -e-((1+k^2) * cos(f)), -kd, 0, 0;
                         0, 0, 0, 0, e + cos(f), -sin(f)];
+        end
+
+        function M = TtoM(nu, e)
+            E = 2 * atan(sqrt((1-e)/(1+e)) * tan(nu/2));
+            if E < 0
+                E = E + 2*pi;
+            end
+            M = E - e * sin(E);
+        end
+
+        function roe = calculate_quasi_nonsingular_roe(chief_state, deputy_state)
+            chief_oe = util.ECI2OE(chief_state);
+            deputy_oe = util.ECI2OE(deputy_state);
+        
+            a_c = chief_oe(1);
+            e_c = chief_oe(2);
+            i_c = chief_oe(3);
+            RAAN_c = chief_oe(4);
+            w_c = chief_oe(5);
+            nu_c = chief_oe(6);
+            
+            a_d = deputy_oe(1);
+            e_d = deputy_oe(2);
+            i_d = deputy_oe(3);
+            RAAN_d = deputy_oe(4);
+            w_d = deputy_oe(5);
+            nu_d = deputy_oe(6);
+        
+            M_c = util.TtoM(nu_c, e_c);
+            M_d = util.TtoM(nu_d, e_d);
+            
+            da = (a_d - a_c) / a_c;
+            dl = (M_d + w_d) - (M_c + w_c) + (RAAN_d - RAAN_c)*cos(i_c);
+
+            de_x = e_d*cos(w_d) - e_c*cos(w_c);
+            de_y = e_d*sin(w_d) - e_c*sin(w_c);
+            
+            di_x = i_d - i_c;
+            di_y = (RAAN_d - RAAN_c)*sin(i_c);
+            
+            roe = [da; dl; de_x; de_y; di_x; di_y];
         end
     end
 end
