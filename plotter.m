@@ -243,11 +243,17 @@ function plot_deputy(result, graphics_settings)
         plot(T3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
         plot(T4, R4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(T5, R5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Tangential (m)');
     ylabel('Radial (m)');
@@ -281,11 +287,17 @@ function plot_deputy(result, graphics_settings)
         plot(N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
-        plot(N4, R4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        plot(N4, T4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(N5, T5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Normal (m)');
     ylabel('Radial (m)');
@@ -319,11 +331,17 @@ function plot_deputy(result, graphics_settings)
         plot(T3, N3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
         plot(T4, N4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(T5, N5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
@@ -357,11 +375,17 @@ function plot_deputy(result, graphics_settings)
         plot3(T3, N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
-        Rroe = rho(:,1); Troe = rho(:,2); Nroe = rho(:,3);
-        plot3(Troe, Nroe, Rroe, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
+        R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
+        plot3(T4, N4, R4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot3(T5, N5, R5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
 
     xlabel('Tangential (m)');
@@ -400,11 +424,17 @@ function plot_deputy(result, graphics_settings)
         plot(T3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
         plot(T4, R4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(T5, R5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
@@ -438,11 +468,17 @@ function plot_deputy(result, graphics_settings)
         plot(N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
         plot(N4, R4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(N5, R5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Normal Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
@@ -476,11 +512,17 @@ function plot_deputy(result, graphics_settings)
         plot(T3, N3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
         plot(T4, N4, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(T5, N5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Normal Velocity (m/s)');
@@ -514,11 +556,17 @@ function plot_deputy(result, graphics_settings)
         plot3(Tv3, Nv3, Rv3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
-    if graphics_settings.plot_deputy.roe
-        rho = result.roe_state_history(:, 1:6);
-        Rvroe = rho(:,4); Tvroe = rho(:,5); Nvroe = rho(:,6);
-        plot3(Tvroe, Nvroe, Rvroe, 'm', 'LineWidth', 2);
-        legend_names = [legend_names, "ROE Dynamics"];
+    if graphics_settings.plot_deputy.roe_circular
+        rho = result.roe_circular_state_history(:, 1:6);
+        Rv4 = rho(:,4); Tv4 = rho(:,5); Nv4 = rho(:,6);
+        plot3(Tv4, Nv4, Rv4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Circular"];
+    end
+    if graphics_settings.plot_deputy.roe_eccentric
+        rho = result.roe_eccentric_state_history(:, 1:6);
+        Rv5 = rho(:,4); Tv5 = rho(:,5); Nv5 = rho(:,6);
+        plot3(Tv5, Nv5, Rv5, 'y', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');

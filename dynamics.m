@@ -96,7 +96,7 @@ classdef dynamics
             state_rtn = a_matrix * util.calculate_ya_matrix(f, t, initial_conditions_chief_oes) * integration_constants;
         end
 
-        function state_rtn = propagate_with_roe(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
+        function state_rtn = propagate_with_roe_circular(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
             a = initial_conditions_chief_oes(1);
             e = initial_conditions_chief_oes(2);
 
@@ -127,6 +127,46 @@ classdef dynamics
             dv_t = a * n * (-1.5 * da + 2 * de * cos(u - phi_e));
             dv_n = a * n * (di * cos(u - theta_i));
         
+            state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
+        end
+
+        function state_rtn = propagate_with_roe_eccentric(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
+            a = initial_conditions_chief_oes(1);
+            e = initial_conditions_chief_oes(2);
+            i = initial_conditions_chief_oes(3);
+        
+            da = initial_roe(1);
+            dl = initial_roe(2);
+            de_x = initial_roe(3);
+            de_y = initial_roe(4);
+            di_x = initial_roe(5);
+            di_y = initial_roe(6);
+
+            f = current_chief_oe(6);
+            w = current_chief_oe(5);
+            
+            M = util.TtoM(f, e);
+            M0 = util.TtoM(initial_conditions_chief_oes(6), e);
+            
+            n = sqrt(constants.mu/a^3);
+            orbit_count = floor(n*t/(2*pi));
+            dM = M - M0 + 2*pi*orbit_count;
+
+            eta = sqrt(1 - e^2);
+            k = 1 + e*cos(f);
+            k_prime = -e*sin(f);
+
+            e_x = e*cos(w);
+            e_y = e*sin(w);
+
+            dr_r = a * (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
+            dr_t = a * ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*a*da*dM;
+            dr_n = a * (di_x*sin(f) - di_y*cos(f));
+
+            dv_r = n * a * (eta/k) * (de_x*sin(f) - de_y*cos(f));
+            dv_t = n * a * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
+            dv_n = n * a * (eta/k) * (di_x*cos(f) + di_y*sin(f));
+            
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end
     end
