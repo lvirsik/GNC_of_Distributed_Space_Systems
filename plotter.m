@@ -243,6 +243,12 @@ function plot_deputy(result, graphics_settings)
         plot(T3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
+        plot(T4, R4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
+    end
     xlabel('Tangential (m)');
     ylabel('Radial (m)');
     legend(legend_names)
@@ -272,8 +278,14 @@ function plot_deputy(result, graphics_settings)
     if graphics_settings.plot_deputy.ya
         rho = result.ya_state_history(:, 1:6);
         R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
-        plot(N3, T3, 'c', 'LineWidth', 2);
+        plot(N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
+    end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
+        plot(N4, R4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
     end
     xlabel('Normal (m)');
     ylabel('Radial (m)');
@@ -306,6 +318,12 @@ function plot_deputy(result, graphics_settings)
         R3 = rho(:,1); T3 = rho(:,2); N3 = rho(:,3);
         plot(T3, N3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
+    end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
+        plot(T4, N4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
     end
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
@@ -382,6 +400,12 @@ function plot_deputy(result, graphics_settings)
         plot(T3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
+        plot(T4, R4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
+    end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
     legend(legend_names)
@@ -414,6 +438,12 @@ function plot_deputy(result, graphics_settings)
         plot(N3, R3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
     end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
+        plot(N4, R4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
+    end
     xlabel('Normal Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
     legend(legend_names)
@@ -445,6 +475,12 @@ function plot_deputy(result, graphics_settings)
         R3 = rho(:,4); T3 = rho(:,5); N3 = rho(:,6);
         plot(T3, N3, 'c', 'LineWidth', 2);
         legend_names = [legend_names,"YA"];
+    end
+    if graphics_settings.plot_deputy.roe
+        rho = result.roe_state_history(:, 1:6);
+        R4 = rho(:,4); T4 = rho(:,5); N4 = rho(:,6);
+        plot(T4, N4, 'm', 'LineWidth', 2);
+        legend_names = [legend_names, "ROE Dynamics"];
     end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Normal Velocity (m/s)');
