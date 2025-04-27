@@ -290,13 +290,13 @@ function plot_deputy(result, graphics_settings)
     if graphics_settings.plot_deputy.roe_circular
         rho = result.roe_circular_state_history(:, 1:6);
         R4 = rho(:,1); T4 = rho(:,2); N4 = rho(:,3);
-        plot(N4, T4, 'm', 'LineWidth', 2);
+        plot(N4, R4, 'm', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Circular"];
     end
     if graphics_settings.plot_deputy.roe_eccentric
         rho = result.roe_eccentric_state_history(:, 1:6);
         R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
-        plot(N5, T5, 'y', 'LineWidth', 2);
+        plot(N5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
     end
     xlabel('Normal (m)');

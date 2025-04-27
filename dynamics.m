@@ -119,13 +119,13 @@ classdef dynamics
             
             delta_u = u - u0 + 2*pi*floor(n*t/(2*pi));
 
-            dr_r = a * (da - de * cos(u - phi_e));
-            dr_t = a * (dl - 1.5 * da * delta_u + 2 * de * sin(u - phi_e));
-            dr_n = a * (di * sin(u - theta_i));
+            dr_r = (da - de * cos(u - phi_e));
+            dr_t = (dl - 1.5 * da * delta_u + 2 * de * sin(u - phi_e));
+            dr_n = (di * sin(u - theta_i));
 
-            dv_r = a * n * (de * sin(u - phi_e));
-            dv_t = a * n * (-1.5 * da + 2 * de * cos(u - phi_e));
-            dv_n = a * n * (di * cos(u - theta_i));
+            dv_r = n * (de * sin(u - phi_e));
+            dv_t = n * (-1.5 * da + 2 * de * cos(u - phi_e));
+            dv_n = n * (di * cos(u - theta_i));
         
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end
@@ -159,13 +159,13 @@ classdef dynamics
             e_x = e*cos(w);
             e_y = e*sin(w);
 
-            dr_r = a * (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
-            dr_t = a * ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*a*da*dM;
-            dr_n = a * (di_x*sin(f) - di_y*cos(f));
+            dr_r = (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
+            dr_t = ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*da*dM;
+            dr_n = (di_x*sin(f) - di_y*cos(f));
 
-            dv_r = n * a * (eta/k) * (de_x*sin(f) - de_y*cos(f));
-            dv_t = n * a * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
-            dv_n = n * a * (eta/k) * (di_x*cos(f) + di_y*sin(f));
+            dv_r = n * (eta/k) * (de_x*sin(f) - de_y*cos(f));
+            dv_t = n * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
+            dv_n = n * (eta/k) * (di_x*cos(f) + di_y*sin(f));
             
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end

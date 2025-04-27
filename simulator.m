@@ -82,7 +82,7 @@ classdef simulator
                 if self.simulation_settings.roe_circular_deputy
                     roe_circular_deputy_state_history = zeros(length(self.time_span), 6);
                     deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
-                    initial_roe = util.calculate_quasi_nonsingular_roe(chief_initial_state_eci, deputy_initial_state_eci);
+                    initial_roe = util.ECI2ROEs(chief_initial_state_eci, deputy_initial_state_eci);
                     for idx = 1:length(self.time_span)
                         chief_oes = util.ECI2OE(result.chief_history_num(idx, :));
                         roe_circular_deputy_state_history(idx,:) = dynamics.propagate_with_roe_circular(self.time_span(idx), [a, e, incl, RAAN, w, v], initial_roe, chief_oes);
@@ -93,7 +93,7 @@ classdef simulator
                 if self.simulation_settings.roe_eccentric_deputy
                     roe_eccentric_deputy_state_history = zeros(length(self.time_span), 6);
                     deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
-                    initial_roe = util.calculate_quasi_nonsingular_roe(chief_initial_state_eci, deputy_initial_state_eci);
+                    initial_roe = util.ECI2ROEs(chief_initial_state_eci, deputy_initial_state_eci);
                     for idx = 1:length(self.time_span)
                         chief_oes = util.ECI2OE(result.chief_history_num(idx, :));
                         roe_eccentric_deputy_state_history(idx,:) = dynamics.propagate_with_roe_eccentric(self.time_span(idx), [a, e, incl, RAAN, w, v], initial_roe, chief_oes);
