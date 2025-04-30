@@ -269,7 +269,7 @@ classdef util
             M = E - e * sin(E);
         end
 
-        function roe = calculate_quasi_nonsingular_roe(chief_state, deputy_state)
+        function roe = ECI2ROE(chief_state, deputy_state)
             chief_oe = util.ECI2OE(chief_state);
             deputy_oe = util.ECI2OE(deputy_state);
         
@@ -367,6 +367,24 @@ classdef util
             dv_n = n / eta * (0 * da + 0 * dl0 + 0 * de_x + 0 * de_y + b_zdot_5 * di_x + b_zdot_6 * di_y);
             
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
+        end
+
+        function q_oe = ECI2qOE(state_eci)
+            oes = util.ECI2OE(state_eci);
+            a = oes(1);
+            e = oes(2);
+            i = oes(3);
+            RAAN = oes(4);
+            w = oes(5);
+            f = oes(6);
+
+            l = RAAN + w + util.TtoM(f, e);
+            ex = e * cos(w + RAAN);
+            ey = e * sin(w + RAAN);
+            ix = sin(i)*cos(RAAN);
+            iy = sin(i)*sin(RAAN);
+
+            q_oe = [a; l; ex; ey; ix; iy];
         end
     end
 end

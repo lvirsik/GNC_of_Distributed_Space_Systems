@@ -24,7 +24,7 @@ function plotter(result, graphics_settings)
         plot_specific_energy(result);
     end
 
-    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw || graphics_settings.plot_deputy.ya || graphics_settings.plot_deputy.roe
+    if graphics_settings.plot_deputy.relative || graphics_settings.plot_deputy.absolute || graphics_settings.plot_deputy.hcw || graphics_settings.plot_deputy.ya || graphics_settings.plot_deputy.roe_eccentric
         plot_deputy(result, graphics_settings);
     end
 
@@ -32,6 +32,17 @@ function plotter(result, graphics_settings)
         plot_deputy_manuvered(result);
     end
 
+    if graphics_settings.plot_quasi_oes
+        plot_quasi_oes(result)
+    end
+
+    if graphics_settings.plot_quasi_roes
+        plot_quasi_roes(result)
+    end
+
+    if graphics_settings.plot_quasi_both
+        plot_quasi_both(result)
+    end
 end
 
 function compare_numerical_vs_kepler(result)
@@ -603,4 +614,171 @@ function plot_deputy_manuvered(result)
     title('Deputy Velocity in RTN Frame');
     grid on;
     view(3);
+end
+
+function plot_quasi_oes(result)
+    % Transform deputy orbit to RTN frame relative to chief
+    t = result.t_num;
+    qOEs = zeros(length(result.t_num), 6);
+    for i = 1:length(result.t_num)
+        qOEs(i,:) = util.ECI2qOE(result.deputy_state_history_eci(i,:));
+    end
+
+    % Low-pass filter parameters
+    sample_rate = 1 / mean(diff(t));       
+    cutoff_freq = 1 / 11000; 
+    [b, a] = butter(3, cutoff_freq / (0.5 * sample_rate), 'low');
+    qOEs_mean = zeros(size(qOEs));
+    for k = 1:2 
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+    for k = 3:6
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+
+
+    a     = qOEs(:, 1);     a_m = qOEs_mean(:, 1);
+    l     = qOEs(:, 2);     l_m = qOEs_mean(:, 2);
+    ex    = qOEs(:, 3);     ex_m = qOEs_mean(:, 3);
+    ey    = qOEs(:, 4);     ey_m = qOEs_mean(:, 4);
+    ix    = qOEs(:, 5);     ix_m = qOEs_mean(:, 5);
+    iy    = qOEs(:, 6);     iy_m = qOEs_mean(:, 6);
+    figure();
+    tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
+    t_hr = t / 3600;
+    tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
+    nexttile; hold on;
+    plot(t_hr, a, 'r'); plot(t_hr, a_m, '--r');
+    xlabel('Time (hrs)'); ylabel('a (km)'); title('Semi-Major Axis'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, l, 'g'); plot(t_hr, l_m, '--g');
+    xlabel('Time (hrs)'); ylabel('l'); title('Mean Argument of Latitude'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ex, 'y'); plot(t_hr, ex_m, '--y');
+    xlabel('Time (hrs)'); ylabel('e_x'); title('Eccentricity X'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ey, 'm'); plot(t_hr, ey_m, '--m');
+    xlabel('Time (hrs)'); ylabel('e_y'); title('Eccentricity Y'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ix, 'c'); plot(t_hr, ix_m, '--c');
+    xlabel('Time (hrs)'); ylabel('i_x'); title('Inclination X'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, iy, 'k'); plot(t_hr, iy_m, '--k');
+    xlabel('Time (hrs)'); ylabel('i_y'); title('Inclination Y'); grid on;
+end
+
+function plot_quasi_roes(result)
+    % Transform deputy orbit to RTN frame relative to chief
+    t = result.t_num;
+    qOEs = zeros(length(result.t_num), 6);
+    for i = 1:length(result.t_num)
+        qOEs(i,:) = util.ECI2ROE(result.chief_history_num(i,:), result.deputy_state_history_eci(i,:));
+    end
+
+    % Low-pass filter parameters
+    sample_rate = 1 / mean(diff(t));       
+    cutoff_freq = 1 / 11000; 
+    [b, a] = butter(3, cutoff_freq / (0.5 * sample_rate), 'low');
+    qOEs_mean = zeros(size(qOEs));
+    for k = 1:2 
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+    for k = 3:6
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+
+
+    a     = qOEs(:, 1);     a_m = qOEs_mean(:, 1);
+    l     = qOEs(:, 2);     l_m = qOEs_mean(:, 2);
+    ex    = qOEs(:, 3);     ex_m = qOEs_mean(:, 3);
+    ey    = qOEs(:, 4);     ey_m = qOEs_mean(:, 4);
+    ix    = qOEs(:, 5);     ix_m = qOEs_mean(:, 5);
+    iy    = qOEs(:, 6);     iy_m = qOEs_mean(:, 6);
+    figure();
+    tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
+    t_hr = t / 3600;
+    tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
+    nexttile; hold on;
+    plot(t_hr, a, 'r'); plot(t_hr, a_m, '--r');
+    xlabel('Time (hrs)'); ylabel('da'); title('da'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, l, 'g'); plot(t_hr, l_m, '--g');
+    xlabel('Time (hrs)'); ylabel('dl'); title('dl'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ex, 'y'); plot(t_hr, ex_m, '--y');
+    xlabel('Time (hrs)'); ylabel('de_x'); title('dex'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ey, 'm'); plot(t_hr, ey_m, '--m');
+    xlabel('Time (hrs)'); ylabel('de_y'); title('dey'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, ix, 'c'); plot(t_hr, ix_m, '--c');
+    xlabel('Time (hrs)'); ylabel('di_x'); title('dix'); grid on;
+
+    nexttile; hold on;
+    plot(t_hr, iy, 'k'); plot(t_hr, iy_m, '--k');
+    xlabel('Time (hrs)'); ylabel('di_y'); title('diy'); grid on;
+end
+
+function plot_quasi_both(result)
+    % Transform deputy orbit to RTN frame relative to chief
+    t = result.t_num;
+    qOEs = zeros(length(result.t_num), 6);
+    for i = 1:length(result.t_num)
+        qOEs(i,:) = util.ECI2ROE(result.chief_history_num(i,:), result.deputy_state_history_eci(i,:));
+    end
+
+    % Low-pass filter parameters
+    sample_rate = 1 / mean(diff(t));       
+    cutoff_freq = 1 / 11000; 
+    [b, a] = butter(3, cutoff_freq / (0.5 * sample_rate), 'low');
+    qOEs_mean = zeros(size(qOEs));
+    for k = 1:2 
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+    for k = 3:6
+        qOEs_mean(:,k) = filtfilt(b, a, qOEs(:,k));
+    end
+
+    da     = qOEs(:, 1);     da_m = qOEs_mean(:, 1);
+    dl     = qOEs(:, 2);     dl_m = qOEs_mean(:, 2);
+    dex    = qOEs(:, 3);     dex_m = qOEs_mean(:, 3);
+    dey    = qOEs(:, 4);     dey_m = qOEs_mean(:, 4);
+    dix    = qOEs(:, 5);     dix_m = qOEs_mean(:, 5);
+    diy    = qOEs(:, 6);     diy_m = qOEs_mean(:, 6);
+
+    figure;
+    tiledlayout(1,3, 'Padding', 'compact', 'TileSpacing', 'compact');
+    % Plot Δex vs Δey
+    nexttile;
+    hold on
+    plot(dex, dey, 'b');
+    plot(dex_m, dey_m, '--b');
+    xlabel('\Delta e_x'); ylabel('\Delta e_y');
+    title('\Delta e_x vs \Delta e_y'); grid on; axis equal;
+
+    % Plot Δix vs Δiy
+    nexttile;
+    hold on
+    plot(dix, diy, 'r');
+    plot(dix_m, diy_m, '--r');
+    xlabel('\Delta i_x'); ylabel('\Delta i_y');
+    title('\Delta i_x vs \Delta i_y'); grid on; axis equal;
+
+    % Plot Δl vs Δa
+    nexttile;
+    hold on
+    plot(dl, da, 'k');
+    plot(dl_m, da_m, '--k');
+    xlabel('\Delta l'); ylabel('\Delta a');
+    title('\Delta l vs \Delta a'); grid on; axis equal;
+
 end
