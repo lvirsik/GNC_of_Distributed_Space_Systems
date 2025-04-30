@@ -386,5 +386,80 @@ classdef util
 
             q_oe = [a; l; ex; ey; ix; iy];
         end
+
+        function STM = calculate_stm_j2(oes, t)
+            tau = t;
+            a = oes(1);
+            e = oes(2);
+            i = oes(3);
+            eta = sqrt(1 - e^2);
+            J2 = constants.J2;
+            R_E = constants.earth_radius;
+            mu = constants.mu;
+            kappa = (3/4) * J2 * R_E^2 * sqrt(mu) / (a^(7/2) * eta^4);
+            E = 1 + eta;
+            F = 4 + 3 * eta;
+            G = 1 / eta^2;
+            P = 3 * cos(i)^2 - 1;
+            Q = 5 * cos(i)^2 - 1;
+            R = cos(i);
+            S = sin(2 * i);
+            T = sin(i)^2;
+            U = sin(i);
+            V = tan(i/2);
+            W = cos(i/2)^2;
+
+            % Time-varying angular quantities
+            omega_dot = kappa * Q;
+            Omega_dot = -2 * kappa * R;
+
+            omega_f = omega_i + omega_dot * tau;
+            Omega_f = Omega_i + Omega_dot * tau;
+
+            % Eccentricity vector components
+            e_xi = e * cos(omega_i);
+            e_yi = e * sin(omega_i);
+            e_xf = e * cos(omega_f);
+            e_yf = e * sin(omega_f);
+
+            e_xxi = e * cos(omega_i + Omega_i);
+            e_yyi = e * sin(omega_i + Omega_i);
+            e_xxf = e * cos(omega_f + Omega_f);
+            e_yyf = e * sin(omega_f + Omega_f);
+
+            % Inclination vector components
+            t_xi = tan(i/2) * cos(Omega_i);
+            t_yi = tan(i/2) * sin(Omega_i);
+            t_xf = tan(i/2) * cos(Omega_f);
+            t_yf = tan(i/2) * sin(Omega_f);
+
+            % Initialize 7x7 identity STM matrix
+            Phi = sym(eye(7));
+
+            % Row 2
+            Phi(2,1) = -(3/2)*n - (7/2)*kappa*E*P;
+            Phi(2,3) = kappa * e_xi * F * G * P * tau;
+            Phi(2,4) = kappa * e_yi * F * G * P * tau;
+            Phi(2,6) = -kappa * F * S * tau;
+
+            % Row 3
+            Phi(3,1) = (7/2) * kappa * e_yf * Q * tau;
+            Phi(3,3) = cos(omega_dot * tau) - 4 * kappa * e_xxi * e_yyf * G * Q * tau;
+            Phi(3,4) = sin(omega_dot * tau) - 4 * kappa * e_yyi * e_yyf * G * Q * tau;
+            Phi(3,5) = 5 * kappa * e_yf * S * tau;
+
+            % Row 4
+            Phi(4,1) = -(7/2) * kappa * e_xf * Q * tau;
+            Phi(4,3) = sin(omega_dot * tau) + 4 * kappa * e_yi * e_yf * G * Q * tau;
+            Phi(4,4) = cos(omega_dot * tau) + 4 * kappa * e_yi * e_xf * G * Q * tau;
+            Phi(4,5) = -5 * kappa * e_xf * S * tau;
+
+            % Row 6
+            Phi(6,1) = (7/2) * kappa * S * tau;
+            Phi(6,3) = -4 * kappa * e_xi * G * S * tau;
+            Phi(6,4) = -4 * kappa * e_yi * G * S * tau;
+            Phi(6,5) = 2 * kappa * T * tau;
+
+        end
     end
 end
