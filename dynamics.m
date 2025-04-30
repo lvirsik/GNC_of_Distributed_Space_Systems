@@ -134,38 +134,65 @@ classdef dynamics
             a = initial_conditions_chief_oes(1);
             e = initial_conditions_chief_oes(2);
             i = initial_conditions_chief_oes(3);
-        
+            
             da = initial_roe(1);
-            dl = initial_roe(2);
+            dl0 = initial_roe(2);
             de_x = initial_roe(3);
             de_y = initial_roe(4);
             di_x = initial_roe(5);
             di_y = initial_roe(6);
-
+            
             f = current_chief_oe(6);
             w = current_chief_oe(5);
+            u = w + f;
             
-            M = util.TtoM(f, e);
-            M0 = util.TtoM(initial_conditions_chief_oes(6), e);
+            e_x = e * cos(w);
+            e_y = e * sin(w);
             
             n = sqrt(constants.mu/a^3);
-            orbit_count = floor(n*t/(2*pi));
-            dM = M - M0 + 2*pi*orbit_count;
-
             eta = sqrt(1 - e^2);
             k = 1 + e*cos(f);
             k_prime = -e*sin(f);
-
-            e_x = e*cos(w);
-            e_y = e*sin(w);
-
-            dr_r = (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
-            dr_t = ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*da*dM;
-            dr_n = (di_x*sin(f) - di_y*cos(f));
-
-            dv_r = n * (eta/k) * (de_x*sin(f) - de_y*cos(f));
-            dv_t = n * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
-            dv_n = n * (eta/k) * (di_x*cos(f) + di_y*sin(f));
+            
+            n_t = n * t;
+            
+            b_x_1 = (1/k) + (3/2)*k_prime*(n_t/eta^3);
+            b_x_2 = -k_prime/eta^3;
+            b_x_3 = (1/eta^3) * (e_x*((k-1)/(1+eta)) - cos(u));
+            b_x_4 = (1/eta^3) * (e_y*((k-1)/(1+eta)) - sin(u));
+            b_x_6 = (k_prime/eta^3) * cot(i);
+            
+            b_y_1 = -(3/2)*k*(n_t/eta^3);
+            b_y_2 = k/eta^3;
+            b_y_3 = (1/eta^2) * ((1 + (1/k))*sin(u) + (e_y/k) + (k/eta)*(e_y/(1+eta)));
+            b_y_4 = -(1/eta^2) * ((1 + (1/k))*cos(u) + (e_x/k) + (k/eta)*(e_x/(1+eta)));
+            b_y_6 = ((1/k) - (k/eta^3)) * cot(i);
+            
+            b_z_5 = (1/k) * sin(u);
+            b_z_6 = -(1/k) * cos(u);
+            
+            b_xdot_1 = (k_prime/2) + (3/2)*k^2*(1-k)*(n_t/eta^3);
+            b_xdot_2 = -k^2*(k-1)/eta^3;
+            b_xdot_3 = (k^2/eta^3) * (eta*sin(u) + e_y*((k-1)/(1+eta)));
+            b_xdot_4 = -(k^2/eta^3) * (eta*cos(u) - e_x*((k-1)/(1+eta)));
+            b_xdot_6 = -(k^2/eta^3) * (k-1) * cot(i);
+            
+            b_ydot_1 = -(3/2)*k * (1 + k_prime*(n_t/eta^3));
+            b_ydot_2 = (k^2/eta^3) * k_prime;
+            b_ydot_3 = (1 + (k^2/eta^3))*cos(u) + e_x*(k/eta^2)*(1 + (k/eta)*((1-k)/(1+eta)));
+            b_ydot_4 = (1 + (k^2/eta^3))*sin(u) + e_y*(k/eta^2)*(1 + (k/eta)*((1-k)/(1+eta)));
+            b_ydot_6 = -(1 + (k^2/eta^3)) * k_prime * cot(i);
+            
+            b_zdot_5 = cos(u) + e_x;
+            b_zdot_6 = sin(u) + e_y;
+            
+            dr_r = a * eta^2 * (b_x_1 * da + b_x_2 * dl0 + b_x_3 * de_x + b_x_4 * de_y + 0 * di_x + b_x_6 * di_y);
+            dr_t = a * eta^2 * (b_y_1 * da + b_y_2 * dl0 + b_y_3 * de_x + b_y_4 * de_y + 0 * di_x + b_y_6 * di_y);
+            dr_n = a * eta^2 * (0 * da + 0 * dl0 + 0 * de_x + 0 * de_y + b_z_5 * di_x + b_z_6 * di_y);
+            
+            dv_r = a * n / eta * (b_xdot_1 * da + b_xdot_2 * dl0 + b_xdot_3 * de_x + b_xdot_4 * de_y + 0 * di_x + b_xdot_6 * di_y);
+            dv_t = a * n / eta * (b_ydot_1 * da + b_ydot_2 * dl0 + b_ydot_3 * de_x + b_ydot_4 * de_y + 0 * di_x + b_ydot_6 * di_y);
+            dv_n = a * n / eta * (0 * da + 0 * dl0 + 0 * de_x + 0 * de_y + b_zdot_5 * di_x + b_zdot_6 * di_y);
             
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end
