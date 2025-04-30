@@ -291,7 +291,7 @@ classdef util
             M_d = util.TtoM(nu_d, e_d);
             
             da = (a_d - a_c) / a_c;
-            dl = (M_d + w_d) - (M_c + w_c) + (RAAN_d - RAAN_c)*cos(i_c);
+            dl = wrapTo2Pi((M_d + w_d) - (M_c + w_c) + (RAAN_d - RAAN_c)*cos(i_c));
 
             de_x = e_d*cos(w_d) - e_c*cos(w_c);
             de_y = e_d*sin(w_d) - e_c*sin(w_c);
@@ -300,6 +300,73 @@ classdef util
             di_y = (RAAN_d - RAAN_c)*sin(i_c);
             
             roe = [da; dl; de_x; de_y; di_x; di_y];
+        end
+
+        function state_rtn = ROE2RTN(initial_roe, current_chief_oe)
+            a = current_chief_oe(1);
+            e = current_chief_oe(2);
+            i = current_chief_oe(3);
+            
+            da = initial_roe(1);
+            dl0 = initial_roe(2);
+            de_x = initial_roe(3);
+            de_y = initial_roe(4);
+            di_x = initial_roe(5);
+            di_y = initial_roe(6);
+            
+            f = current_chief_oe(6);
+            w = current_chief_oe(5);
+            u = w + f;
+            
+            e_x = e * cos(w);
+            e_y = e * sin(w);
+            
+            n = sqrt(constants.mu/a^3);
+            eta = sqrt(1 - e^2);
+            k = 1 + e*cos(f);
+            k_prime = -e*sin(f);
+            
+            n_t = 0;
+            
+            b_x_1 = (1/k) + (3/2)*k_prime*(n_t/eta^3);
+            b_x_2 = -k_prime/eta^3;
+            b_x_3 = (1/eta^3) * (e_x*((k-1)/(1+eta)) - cos(u));
+            b_x_4 = (1/eta^3) * (e_y*((k-1)/(1+eta)) - sin(u));
+            b_x_6 = (k_prime/eta^3) * cot(i);
+            
+            b_y_1 = -(3/2)*k*(n_t/eta^3);
+            b_y_2 = k/eta^3;
+            b_y_3 = (1/eta^2) * ((1 + (1/k))*sin(u) + (e_y/k) + (k/eta)*(e_y/(1+eta)));
+            b_y_4 = -(1/eta^2) * ((1 + (1/k))*cos(u) + (e_x/k) + (k/eta)*(e_x/(1+eta)));
+            b_y_6 = ((1/k) - (k/eta^3)) * cot(i);
+            
+            b_z_5 = (1/k) * sin(u);
+            b_z_6 = -(1/k) * cos(u);
+            
+            b_xdot_1 = (k_prime/2) + (3/2)*k^2*(1-k)*(n_t/eta^3);
+            b_xdot_2 = -k^2*(k-1)/eta^3;
+            b_xdot_3 = (k^2/eta^3) * (eta*sin(u) + e_y*((k-1)/(1+eta)));
+            b_xdot_4 = -(k^2/eta^3) * (eta*cos(u) - e_x*((k-1)/(1+eta)));
+            b_xdot_6 = -(k^2/eta^3) * (k-1) * cot(i);
+            
+            b_ydot_1 = -(3/2)*k * (1 + k_prime*(n_t/eta^3));
+            b_ydot_2 = (k^2/eta^3) * k_prime;
+            b_ydot_3 = (1 + (k^2/eta^3))*cos(u) + e_x*(k/eta^2)*(1 + (k/eta)*((1-k)/(1+eta)));
+            b_ydot_4 = (1 + (k^2/eta^3))*sin(u) + e_y*(k/eta^2)*(1 + (k/eta)*((1-k)/(1+eta)));
+            b_ydot_6 = -(1 + (k^2/eta^3)) * k_prime * cot(i);
+            
+            b_zdot_5 = cos(u) + e_x;
+            b_zdot_6 = sin(u) + e_y;
+            
+            dr_r = eta^2 * (b_x_1 * da + b_x_2 * dl0 + b_x_3 * de_x + b_x_4 * de_y + 0 * di_x + b_x_6 * di_y);
+            dr_t = eta^2 * (b_y_1 * da + b_y_2 * dl0 + b_y_3 * de_x + b_y_4 * de_y + 0 * di_x + b_y_6 * di_y);
+            dr_n = eta^2 * (0 * da + 0 * dl0 + 0 * de_x + 0 * de_y + b_z_5 * di_x + b_z_6 * di_y);
+            
+            dv_r = n / eta * (b_xdot_1 * da + b_xdot_2 * dl0 + b_xdot_3 * de_x + b_xdot_4 * de_y + 0 * di_x + b_xdot_6 * di_y);
+            dv_t = n / eta * (b_ydot_1 * da + b_ydot_2 * dl0 + b_ydot_3 * de_x + b_ydot_4 * de_y + 0 * di_x + b_ydot_6 * di_y);
+            dv_n = n / eta * (0 * da + 0 * dl0 + 0 * de_x + 0 * de_y + b_zdot_5 * di_x + b_zdot_6 * di_y);
+            
+            state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end
     end
 end

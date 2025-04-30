@@ -131,9 +131,9 @@ classdef dynamics
         end
 
         function state_rtn = propagate_with_roe_eccentric(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
-            a = initial_conditions_chief_oes(1);
-            e = initial_conditions_chief_oes(2);
-            i = initial_conditions_chief_oes(3);
+            a = current_chief_oe(1);
+            e = current_chief_oe(2);
+            i = current_chief_oe(3);
             
             da = initial_roe(1);
             dl0 = initial_roe(2);
