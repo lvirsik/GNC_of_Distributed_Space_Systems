@@ -269,7 +269,7 @@ classdef util
             M = E - e * sin(E);
         end
 
-        function roe = ECI2ROEs(chief_state, deputy_state)
+        function roe = calculate_quasi_nonsingular_roe(chief_state, deputy_state)
             chief_oe = util.ECI2OE(chief_state);
             deputy_oe = util.ECI2OE(deputy_state);
         
@@ -292,51 +292,14 @@ classdef util
             
             da = (a_d - a_c) / a_c;
             dl = (M_d + w_d) - (M_c + w_c) + (RAAN_d - RAAN_c)*cos(i_c);
-            if M_c - M_d < 0
-                dl = dl - (2*pi);
-            end
-            
 
             de_x = e_d*cos(w_d) - e_c*cos(w_c);
             de_y = e_d*sin(w_d) - e_c*sin(w_c);
             
             di_x = i_d - i_c;
             di_y = (RAAN_d - RAAN_c)*sin(i_c);
-            roe = a_c * [da; dl; de_x; de_y; di_x; di_y];
-        end
-
-        function [state_rtn] = ROE2RTN(roes, chief_eci)
-            chief_oes = util.ECI2OE(chief_eci);
-            a = chief_oes(1);
-            e = chief_oes(2);
-            i = chief_oes(3);
-            w = chief_oes(5);
-            f = chief_oes(6);
-            n = sqrt(constants.mu/a^3);
-            M = util.TtoM(f, e);
-            da = roes(1);
-            dl = roes(2);
-            de_x = roes(3);
-            de_y = roes(4);
-            di_x = roes(5);
-            di_y = roes(6);
-
-            eta = sqrt(1 - e^2);
-            k = 1 + e*cos(f);
-            k_prime = -e*sin(f);
-
-            e_x = e*cos(w);
-            e_y = e*sin(w);
-
-            dr_r = (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
-            dr_t = ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*a*da*M;
-            dr_n = (di_x*sin(f) - di_y*cos(f));
-
-            dv_r = n * (eta/k) * (de_x*sin(f) - de_y*cos(f));
-            dv_t = n * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
-            dv_n = n * (eta/k) * (di_x*cos(f) + di_y*sin(f));
             
-            state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
+            roe = [da; dl; de_x; de_y; di_x; di_y];
         end
     end
 end
