@@ -196,5 +196,11 @@ classdef dynamics
             
             state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
         end
+    
+        function statedot = wrapper_two_body_relative(t, state, simulation_settings)
+            statedot_chief = dynamics.two_body_dynamics(t, state(1:6), simulation_settings);
+            statedot_deputy = dynamics.two_body_dynamics(t, state(7:12), simulation_settings);
+            statedot = [statedot_chief; statedot_deputy];
+        end    
     end
 end

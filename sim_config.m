@@ -1,14 +1,17 @@
 % Input initial conditions in orbital elments. Units of meters and degrees
 initial_conditions_chief = [6780000, 0.0006, 51.6, 0, 0, 0]; % OEs
-initial_conditions_chief = [6780000, 0.001, 0.1, 0, 0, 0];
-%initial_conditions_deputy = [-50; -500; -180; -0.4; 0.1; 0];
-initial_conditions_deputy = util.ROE2RTN([0; 100; 50; 100; 30; 200], initial_conditions_chief);
+%initial_conditions_chief = [6780000, 0.001, 0.1, 0, 0, 0];
+initial_conditions_deputy = [-50; -50; 50; 1; 0; 0];
+% initial_conditions_deputy = util.ROE2RTN([0; 100; 50; 100; 30; 200], initial_conditions_chief);
 
 % Time step and number of orbits
-num_orbits = 15;
+num_orbits = 1;
 time_step = 1;
 
 % Simulation settings
+
+simulation_settings.DRAGON_SIM = true;
+
 simulation_settings.numerical_propogation = true;
 simulation_settings.keplerian_propogation = false;
 simulation_settings.J2 = true;
@@ -27,7 +30,7 @@ graphics_settings.compare_numerical_vs_kepler = false;
 
 graphics_settings.plot_deputy = struct();
 graphics_settings.plot_deputy.relative = false;
-graphics_settings.plot_deputy.absolute = false;
+graphics_settings.plot_deputy.absolute = true;
 graphics_settings.plot_deputy.hcw = false;
 graphics_settings.plot_deputy.ya = false;
 graphics_settings.plot_deputy.roe_circular  = false;
@@ -35,7 +38,7 @@ graphics_settings.plot_deputy.roe_eccentric = false;
 
 graphics_settings.plot_quasi_oes = false;
 graphics_settings.plot_quasi_roes = false;
-graphics_settings.plot_quasi_both = true;
+graphics_settings.plot_quasi_both = false;
 
 graphics_settings.plot_deputy.manuvered = false;
 

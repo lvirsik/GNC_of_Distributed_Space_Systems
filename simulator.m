@@ -34,8 +34,49 @@ classdef simulator
             result.dt = self.dt;
 
             % Run Numerical Propogator
-            if self.simulation_settings.numerical_propogation
+            if self.simulation_settings.DRAGON_SIM
+                % Initialize Information
+                chief_initial_state_eci = util.OE2ECI([a, e, incl, RAAN, w, v]);
+                deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
+                initial_state_eci = [chief_initial_state_eci; deputy_initial_state_eci];
+                options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
+
+                orbit_period = (2*pi*sqrt(a^3 / constants.mu));
+                num_orbits = round(self.time_span(end) / orbit_period);
+                manuvers_per_orbit = 25;
+                for i=1:num_orbits*manuvers_per_orbit
+                    [new_t, new_history] = ode45(@(t, state_history_num) dynamics.wrapper_two_body_relative(t, state_history_num, self.simulation_settings), self.time_span / (num_orbits*manuvers_per_orbit), initial_state_eci, options);
+
+                    if i == 1
+                        result.combined_history = new_history;
+                        result.t_num = new_t;
+                        
+                    else
+                        result.combined_history = [result.combined_history; new_history];
+                        result.t_num = [result.t_num; new_t];
+                    end
+
+                    initial_state_eci = result.combined_history(end, :);
+
+                    chief_eci = initial_state_eci(1:6)';
+                    deputy_eci = initial_state_eci(7:12)';
+                    deputy_rtn = util.ECI2RTN(deputy_eci, chief_eci);
+                    
+                    burn_dv = 0.1;
+                    cancel_dv = norm(deputy_rtn(4:6));
+                    deputy_rtn(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
+                    dv_tracker = dv_tracker + burn_dv + cancel_dv;
+
+                    deputy_eci = util.RTN2ECI(deputy_rtn, chief_eci);
+                    initial_state_eci(7:12) = deputy_eci;
+                end
                 
+                % Post Processing
+                result.chief_history_num = result.combined_history(:, 1:6);
+                result.deputy_history_num = result.combined_history(:, 7:12);
+                result.absolute_state_history = util.ECI2RTN_history(result.deputy_history_num, result.chief_history_num);
+                result.deputy_state_history_eci = result.deputy_history_num;
+            else
                 % Initialize Information
                 chief_initial_state_eci = util.OE2ECI([a, e, incl, RAAN, w, v]);
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
