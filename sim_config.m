@@ -25,6 +25,8 @@ simulation_settings.roe_eccentric_deputy = false;
 simulation_settings.create_bounded_motion = false;
 
 % Set graphics settings
+graphics_settings.DRAGON_SIM = true;
+
 graphics_settings.orbit_eci = false;
 graphics_settings.compare_numerical_vs_kepler = false;
 

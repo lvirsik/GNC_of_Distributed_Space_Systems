@@ -36,6 +36,8 @@ classdef simulator
             % Run Numerical Propogator
             if self.simulation_settings.DRAGON_SIM
                 % Initialize Information
+                dv_tracker = 0;
+                result.dv = [];
                 chief_initial_state_eci = util.OE2ECI([a, e, incl, RAAN, w, v]);
                 deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
                 initial_state_eci = [chief_initial_state_eci; deputy_initial_state_eci];
@@ -50,10 +52,9 @@ classdef simulator
                     if i == 1
                         result.combined_history = new_history;
                         result.t_num = new_t;
-                        
                     else
                         result.combined_history = [result.combined_history; new_history];
-                        result.t_num = [result.t_num; new_t];
+                        result.t_num = [result.t_num; new_t + (ones(size(new_t)) * result.t_num(end))];
                     end
 
                     initial_state_eci = result.combined_history(end, :);
@@ -62,10 +63,11 @@ classdef simulator
                     deputy_eci = initial_state_eci(7:12)';
                     deputy_rtn = util.ECI2RTN(deputy_eci, chief_eci);
                     
+                    result.dv = [result.dv; dv_tracker*ones(size(new_t))];
                     burn_dv = 0.1;
-                    cancel_dv = norm(deputy_rtn(4:6));
+                    old_v = deputy_rtn(4:6);
                     deputy_rtn(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
-                    dv_tracker = dv_tracker + burn_dv + cancel_dv;
+                    dv_tracker = dv_tracker + norm(deputy_rtn(4:6) - old_v);
 
                     deputy_eci = util.RTN2ECI(deputy_rtn, chief_eci);
                     initial_state_eci(7:12) = deputy_eci;

@@ -43,6 +43,10 @@ function plotter(result, graphics_settings)
     if graphics_settings.plot_quasi_both
         plot_quasi_both(result)
     end
+
+    if graphics_settings.DRAGON_SIM
+        plot_dragon_sim(result)
+    end
 end
 
 function compare_numerical_vs_kepler(result)
@@ -781,4 +785,13 @@ function plot_quasi_both(result)
     xlabel('\Delta l'); ylabel('\Delta a');
     title('\Delta l vs \Delta a'); grid on; axis equal;
 
+end
+
+function plot_dragon_sim(result)
+    figure;
+    plot(result.t_num, result.dv);
+    xlabel('Time (s)');
+    ylabel('Delta V');
+    title('Delta V vs Time');
+    grid on;
 end
