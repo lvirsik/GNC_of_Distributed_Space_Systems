@@ -34,7 +34,7 @@ classdef simulator
             result.dt = self.dt;
 
             % Run Numerical Propogator
-            if self.simulation_settings.DRAGON_SIM
+            if self.simulation_settings.manuver_continuous
                 % Initialize Information
                 dv_tracker = 0;
                 result.dv = [];
@@ -72,6 +72,54 @@ classdef simulator
                     deputy_eci = util.RTN2ECI(deputy_rtn, chief_eci);
                     initial_state_eci(7:12) = deputy_eci;
                 end
+                
+                % Post Processing
+                result.chief_history_num = result.combined_history(:, 1:6);
+                result.deputy_history_num = result.combined_history(:, 7:12);
+                result.absolute_state_history = util.ECI2RTN_history(result.deputy_history_num, result.chief_history_num);
+                result.deputy_state_history_eci = result.deputy_history_num;
+            
+            elseif self.simulation_settings.manuver_instant
+                % Initialize Information
+                dv_tracker = 0;
+                result.dv = [];
+                chief_initial_state_eci = util.OE2ECI([a, e, incl, RAAN, w, v]);
+                deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
+                initial_state_eci = [chief_initial_state_eci; deputy_initial_state_eci];
+                options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
+
+                orbit_period = (2*pi*sqrt(a^3 / constants.mu));
+                num_orbits = round(self.time_span(end) / orbit_period);
+
+                [new_t, new_history] = ode45(@(t, state_history_num) dynamics.wrapper_two_body_relative(t, state_history_num, self.simulation_settings), self.time_span / 2, initial_state_eci, options);
+
+                result.combined_history = new_history;
+                result.t_num = new_t;
+
+                initial_state_eci = result.combined_history(end, :);
+                chief_eci = initial_state_eci(1:6)';
+                deputy_eci = initial_state_eci(7:12)';
+                
+                    
+                % MANUVER WORK DONE HERE
+                deputy_rtn = util.ECI2RTN(deputy_eci, chief_eci);
+                ti = self.time_span(end) * 3/4;
+                tf = self.time_span(end);
+
+                [rr, rv, vr, vv] = util.t2PSI(tf-ti, a);
+                r0 = deputy_rtn(1:3);
+                v0 = deputy_rtn(4:6);
+                new_v = -pinv(rv) * rr * r0
+                keyboard
+                deputy_rtn(4:6) = new_v;
+                %%%%%%
+ 
+                deputy_eci = util.RTN2ECI(deputy_rtn, chief_eci);
+                initial_state_eci(7:12) = deputy_eci;
+
+                [new_t, new_history] = ode45(@(t, state_history_num) dynamics.wrapper_two_body_relative(t, state_history_num, self.simulation_settings), self.time_span / 2, initial_state_eci, options);
+                result.combined_history = [result.combined_history; new_history];
+                result.t_num = [result.t_num; new_t + (ones(size(new_t)) * result.t_num(end))];
                 
                 % Post Processing
                 result.chief_history_num = result.combined_history(:, 1:6);

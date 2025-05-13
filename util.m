@@ -243,6 +243,26 @@ classdef util
                         (-3/2), -2*sin(n*t), -2*cos(n*t), 0, 0, 0;
                         0, 0, 0, 0, cos(n*t), -sin(n*t)];
         end
+
+        function [RR, RV, VR, VV] = t2PSI(t, a)
+            n = sqrt(constants.mu / a^3);
+            
+            RR = [4 - 3*cos(n*t),       0,              0;
+                    6*(sin(n*t) - n*t),   1,              0;
+                    0,                    0,              cos(n*t)];
+                
+            RV = [sin(n*t)/n,           2*(1 - cos(n*t))/n,     0;
+                    2*(cos(n*t) - 1)/n,   (4*sin(n*t) - 3*n*t)/n, 0;
+                    0,                    0,                     sin(n*t)/n];
+                
+            VR = [3*n*sin(n*t),         0,              0;
+                    6*n*(cos(n*t) - 1),   0,              0;
+                    0,                    0,             -n*sin(n*t)];
+                
+            VV = [cos(n*t),             2*sin(n*t),            0;
+                    -2*sin(n*t),          4*cos(n*t) - 3,        0;
+                    0,                    0,                    cos(n*t)];
+        end
     
         function ya_matrix = calculate_ya_matrix(f, t, oes)
             e = oes(2);

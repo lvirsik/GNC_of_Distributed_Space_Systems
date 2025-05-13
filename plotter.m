@@ -44,7 +44,7 @@ function plotter(result, graphics_settings)
         plot_quasi_both(result)
     end
 
-    if graphics_settings.DRAGON_SIM
+    if graphics_settings.manuver_continuous
         plot_dragon_sim(result)
     end
 end

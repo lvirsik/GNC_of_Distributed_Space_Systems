@@ -1,7 +1,7 @@
 % Input initial conditions in orbital elments. Units of meters and degrees
 initial_conditions_chief = [6780000, 0.0006, 51.6, 0, 0, 0]; % OEs
 %initial_conditions_chief = [6780000, 0.001, 0.1, 0, 0, 0];
-initial_conditions_deputy = [-50; -50; 50; 1; 0; 0];
+initial_conditions_deputy = [0; 0; 0; 5; 5; 1];
 % initial_conditions_deputy = util.ROE2RTN([0; 100; 50; 100; 30; 200], initial_conditions_chief);
 
 % Time step and number of orbits
@@ -10,7 +10,8 @@ time_step = 1;
 
 % Simulation settings
 
-simulation_settings.DRAGON_SIM = true;
+simulation_settings.manuver_continuous = false;
+simulation_settings.manuver_instant = true;
 
 simulation_settings.numerical_propogation = true;
 simulation_settings.keplerian_propogation = false;
@@ -25,7 +26,8 @@ simulation_settings.roe_eccentric_deputy = false;
 simulation_settings.create_bounded_motion = false;
 
 % Set graphics settings
-graphics_settings.DRAGON_SIM = true;
+graphics_settings.manuver_continuous = false;
+simulation_settings.manuver_instant = true;
 
 graphics_settings.orbit_eci = false;
 graphics_settings.compare_numerical_vs_kepler = false;
