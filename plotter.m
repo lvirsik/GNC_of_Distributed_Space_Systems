@@ -270,6 +270,12 @@ function plot_deputy(result, graphics_settings)
         plot(T5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
     end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(T5, R5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
+    end
     xlabel('Tangential (m)');
     ylabel('Radial (m)');
     legend(legend_names)
@@ -313,6 +319,12 @@ function plot_deputy(result, graphics_settings)
         R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
         plot(N5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
+    end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(N5, R5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
     end
     xlabel('Normal (m)');
     ylabel('Radial (m)');
@@ -358,6 +370,12 @@ function plot_deputy(result, graphics_settings)
         plot(T5, N5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
     end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot(T5, N5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
+    end
     xlabel('Tangential (m)');
     ylabel('Normal (m)');
     legend(legend_names)
@@ -401,6 +419,12 @@ function plot_deputy(result, graphics_settings)
         R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
         plot3(T5, N5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
+    end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,1); T5 = rho(:,2); N5 = rho(:,3);
+        plot3(T5, N5, R5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
     end
 
     xlabel('Tangential (m)');
@@ -451,6 +475,12 @@ function plot_deputy(result, graphics_settings)
         plot(T5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
     end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(T5, R5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
+    end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
     legend(legend_names)
@@ -494,6 +524,12 @@ function plot_deputy(result, graphics_settings)
         R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
         plot(N5, R5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
+    end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(N5, R5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
     end
     xlabel('Normal Velocity (m/s)');
     ylabel('Radial Velocity (m/s)');
@@ -539,6 +575,12 @@ function plot_deputy(result, graphics_settings)
         plot(T5, N5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
     end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        R5 = rho(:,4); T5 = rho(:,5); N5 = rho(:,6);
+        plot(T5, N5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
+    end
     xlabel('Tangential Velocity (m/s)');
     ylabel('Normal Velocity (m/s)');
     legend(legend_names)
@@ -582,6 +624,12 @@ function plot_deputy(result, graphics_settings)
         Rv5 = rho(:,4); Tv5 = rho(:,5); Nv5 = rho(:,6);
         plot3(Tv5, Nv5, Rv5, 'y', 'LineWidth', 2);
         legend_names = [legend_names, "ROE Eccentric"];
+    end
+    if graphics_settings.plot_deputy.estimated_state
+        rho = result.estimated_state_history(:, 1:6);
+        Rv5 = rho(:,4); Tv5 = rho(:,5); Nv5 = rho(:,6);
+        plot3(Tv5, Nv5, Rv5, 'b', 'LineWidth', 2);
+        legend_names = [legend_names, "Estimated State"];
     end
     xlabel('Tangential (m/s)');
     ylabel('Normal (m/s)');
