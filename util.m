@@ -109,7 +109,7 @@ classdef util
 
             R = r_eci / norm(r_eci);
             N = n / norm(n);
-            T = cross(N, R);
+            T = cross(N, R) / norm(cross(N, R));
 
             R_eci2rtn = [R, T, N]';
             diff = state_eci(1:3) - reference_state_eci(1:3);

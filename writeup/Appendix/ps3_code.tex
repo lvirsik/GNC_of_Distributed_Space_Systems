@@ -1,0 +1,282 @@
+\subsection{Problem Set 3 Code}
+
+\textbf{sim\_config.m}
+\begin{lstlisting}
+% Input initial conditions in orbital elements
+% Case 1: Circular orbit
+initial_conditions_chief_circular = [6780000, 0.001, 0, 0, 0,.1]; 
+initial_conditions_deputy_circular = [0; 10; 0; 1; 0; 0];
+
+% Case 2: Eccentric orbit
+initial_conditions_chief_eccentric = [6780000, 0.1, 0.1, 0, 0, 0]; 
+initial_conditions_deputy_eccentric = [0; 10; 0; 1; 0; 0];
+
+% Case 3: Semi-major axis difference
+initial_conditions_chief_sma = [6780000, 0.1, 0.1, 0, 0, 0]; 
+initial_conditions_deputy_sma = [10; 0; 0; 0; 0; 0];  % 10m radial offset
+
+% Case 4: High eccentricity
+initial_conditions_chief_high_ecc = [6780000, 0.6, 0.1, 0, 0, 0]; 
+initial_conditions_deputy_high_ecc = [0; 10; 0; 1; 0; 0];
+
+% Time step and number of orbits
+num_orbits = 15;
+time_step = 1;
+
+% Common simulation settings
+simulation_settings = struct();
+simulation_settings.numerical_propogation = true;
+simulation_settings.keplerian_propogation = false;
+simulation_settings.J2 = false;
+simulation_settings.relative_deputy = false;
+simulation_settings.absolute_deputy = true;
+simulation_settings.hcw_deputy = false;
+simulation_settings.ya_deputy = true;
+simulation_settings.roe_circular_deputy = false;
+simulation_settings.roe_eccentric_deputy = true;
+simulation_settings.create_bounded_motion = false;
+
+% Common graphics settings
+graphics_settings = struct();
+graphics_settings.orbit_eci = false;
+graphics_settings.compare_numerical_vs_kepler = false;
+graphics_settings.plot_orbital_elements.base_elems = false;
+graphics_settings.plot_orbital_elements.J2_mean_analytical_solution = false;
+graphics_settings.plot_eccentricity_vector = false;
+graphics_settings.plot_ang_momentum_vector = false;
+graphics_settings.plot_specific_energy = false;
+graphics_settings.plot_nonlinear_comparison = false;
+graphics_settings.plot_propagation_errors = false;
+graphics_settings.plot_high_eccentricity = false;
+
+graphics_settings.plot_deputy = struct();
+graphics_settings.plot_deputy.relative = false;
+graphics_settings.plot_deputy.absolute = true;
+graphics_settings.plot_deputy.hcw = false;
+graphics_settings.plot_deputy.ya = true;
+graphics_settings.plot_deputy.roe_circular = false;
+graphics_settings.plot_deputy.roe_eccentric = true;
+graphics_settings.plot_deputy.manuvered = false;
+
+% Case 1: HCW Equations (Circular Orbit)
+fprintf('Running HCW equations for near-circular orbit case\n');
+simulation_settings.hcw_deputy = true;
+simulation_settings.ya_deputy = false;
+simulation_settings.roe_eccentric_deputy = false;
+
+graphics_settings.plot_deputy.hcw = true;
+graphics_settings.plot_deputy.ya = false;
+graphics_settings.plot_deputy.roe_eccentric = false;
+
+sim1 = simulator(initial_conditions_chief_circular, initial_conditions_deputy_circular, num_orbits, time_step, simulation_settings, graphics_settings);
+sim1.run_simulator();
+
+% Case 2: YA and ROE Equations (Eccentric Orbit)
+fprintf('Running YA and ROE for eccentric orbit case\n');
+simulation_settings.hcw_deputy = false;
+simulation_settings.ya_deputy = true;
+simulation_settings.roe_eccentric_deputy = true;
+
+graphics_settings.plot_deputy.hcw = false;
+graphics_settings.plot_deputy.ya = true;
+graphics_settings.plot_deputy.roe_eccentric = true;
+
+sim2 = simulator(initial_conditions_chief_eccentric, initial_conditions_deputy_eccentric, num_orbits, time_step, simulation_settings, graphics_settings);
+sim2.run_simulator();
+
+% Case 3: Nonlinear Comparison
+fprintf('Running nonlinear comparison\n');
+simulation_settings.absolute_deputy = true;
+graphics_settings.plot_nonlinear_comparison = true;
+graphics_settings.plot_propagation_errors = true;
+
+sim3 = simulator(initial_conditions_chief_eccentric, initial_conditions_deputy_eccentric, 5, time_step, simulation_settings, graphics_settings);
+sim3.run_simulator();
+
+% Case 4: Semi-major axis difference
+fprintf('Running SMA difference case\n');
+graphics_settings.plot_nonlinear_comparison = false;
+graphics_settings.plot_propagation_errors = false;
+
+sim4 = simulator(initial_conditions_chief_sma, initial_conditions_deputy_sma, num_orbits, time_step, simulation_settings, graphics_settings);
+result4 = sim4.run_simulator();
+
+% Rename the figures directly to match the expected filenames
+figList = findall(0, 'Type', 'figure');
+for i = 1:length(figList)
+    if strcmp(get(figList(i), 'Name'), 'RelativeTrajectory')
+        saveas(figList(i), 'SMA_Difference_Position.png');
+    elseif strcmp(get(figList(i), 'Name'), 'RelativeVelocity')
+        saveas(figList(i), 'SMA_Difference_Velocity.png');
+    end
+end
+
+% Case 5: High eccentricity
+fprintf('Running high eccentricity case\n');
+graphics_settings.plot_high_eccentricity = true;
+
+sim5 = simulator(initial_conditions_chief_high_ecc, initial_conditions_deputy_high_ecc, 5, time_step, simulation_settings, graphics_settings);
+sim5.run_simulator();
+\end{lstlisting}
+
+\textbf{dynamics.m (key functions)}
+\begin{lstlisting}
+function state_rtn = HCW_propogation(t, initial_conditions_chief_oes, initial_conditions_deputy_rtn)
+    a = initial_conditions_chief_oes(1);
+    n = sqrt(constants.mu / (a^3));
+    a_matrix = [a, 0, 0, 0, 0, 0;
+                0, a, 0, 0, 0, 0;
+                0, 0, a, 0, 0, 0;
+                0, 0, 0, a*n, 0, 0;
+                0, 0, 0, 0, a*n, 0;
+                0, 0, 0, 0, 0, a*n];
+
+    integration_constants = inv(util.calculate_hcw_matrix(0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
+    state_rtn = a_matrix * util.calculate_hcw_matrix(t, initial_conditions_chief_oes) * integration_constants;
+end
+
+function state_rtn = YA_propogation(f, t, initial_conditions_chief_oes, initial_conditions_deputy_rtn)
+    a = initial_conditions_chief_oes(1);
+    e = initial_conditions_chief_oes(2);
+    n = sqrt(constants.mu / (a^3));
+    nu = sqrt(1 - e^2);
+    a_matrix = [a * nu^2, 0, 0, 0, 0, 0;
+                0, a * nu^2, 0, 0, 0, 0;
+                0, 0, a * nu^2, 0, 0, 0;
+                0, 0, 0, a*n/nu, 0, 0;
+                0, 0, 0, 0, a*n/nu, 0;
+                0, 0, 0, 0, 0, a*n/nu];
+    integration_constants = inv(util.calculate_ya_matrix(initial_conditions_chief_oes(6), 0, initial_conditions_chief_oes)) * inv(a_matrix) * initial_conditions_deputy_rtn;
+    state_rtn = a_matrix * util.calculate_ya_matrix(f, t, initial_conditions_chief_oes) * integration_constants;
+end
+
+function state_rtn = propagate_with_roe_eccentric(t, initial_conditions_chief_oes, initial_roe, current_chief_oe)
+    a = initial_conditions_chief_oes(1);
+    e = initial_conditions_chief_oes(2);
+    i = initial_conditions_chief_oes(3);
+
+    da = initial_roe(1);
+    dl = initial_roe(2);
+    de_x = initial_roe(3);
+    de_y = initial_roe(4);
+    di_x = initial_roe(5);
+    di_y = initial_roe(6);
+
+    f = current_chief_oe(6);
+    w = current_chief_oe(5);
+    
+    M = util.TtoM(f, e);
+    M0 = util.TtoM(initial_conditions_chief_oes(6), e);
+    
+    n = sqrt(constants.mu/a^3);
+    orbit_count = floor(n*t/(2*pi));
+    dM = M - M0 + 2*pi*orbit_count;
+
+    eta = sqrt(1 - e^2);
+    k = 1 + e*cos(f);
+    k_prime = -e*sin(f);
+
+    e_x = e*cos(w);
+    e_y = e*sin(w);
+
+    dr_r = a * (da - (k*k_prime/eta^3)*dl - (de_x/eta^3)*k*cos(f) - (de_y/eta^3)*k*sin(f) + (k/eta^3)*((k-1)/(1+eta))*(e_x*de_x + e_y*de_y) + (k*k_prime/eta^3)*di_y*cot(i));
+    dr_t = a * ((k^2/eta^3)*dl + (de_x/eta^2)*(1+k)*sin(f) - (de_y/eta^2)*(1+k)*cos(f) + (1/eta^3)*(eta + k^2/(1+eta))*(e_y*de_x - e_x*de_y) + (1 - k^2/eta^3)*di_y*cot(i)) - 1.5*a*da*dM;
+    dr_n = a * (di_x*sin(f) - di_y*cos(f));
+
+    dv_r = n * a * (eta/k) * (de_x*sin(f) - de_y*cos(f));
+    dv_t = n * a * (eta/k) * (-1.5*da + 2*de_x*cos(f) + 2*de_y*sin(f));
+    dv_n = n * a * (eta/k) * (di_x*cos(f) + di_y*sin(f));
+    
+    state_rtn = [dr_r; dr_t; dr_n; dv_r; dv_t; dv_n];
+end
+\end{lstlisting}
+
+\textbf{util.m (key functions)}
+\begin{lstlisting}
+function ya_matrix = calculate_ya_matrix(f, t, oes)
+    e = oes(2);
+    a = oes(1);
+    n = sqrt(constants.mu / (a^3));
+    nu = sqrt(1 - e^2);
+    k = 1 + (e * cos(f));
+    kd = -e * sin(f);
+    tau = n * t / (nu^3);
+
+    ya_matrix = [(1/k) + (3*kd*tau/2), sin(f), cos(f), 0, 0, 0;
+                -3*k*tau/2, (1 + (1/k))*cos(f), -(1 + (1/k))*sin(f), 1/k, 0, 0;
+                0, 0, 0, 0, (1/k)*sin(f), (1/k)*cos(f);
+                (kd/2)-(3*(k^2)*(k-1)*tau/2), (k^2)*cos(f), -(k^2)*sin(f), 0, 0, 0;
+                -(3/2)*(k + (kd*tau*k^2)), -(k^2 + 1)*sin(f), -e-((1+k^2) * cos(f)), -kd, 0, 0;
+                0, 0, 0, 0, e + cos(f), -sin(f)];
+end
+
+function roe = calculate_quasi_nonsingular_roe(chief_state, deputy_state)
+    chief_oe = util.ECI2OE(chief_state);
+    deputy_oe = util.ECI2OE(deputy_state);
+
+    a_c = chief_oe(1);
+    e_c = chief_oe(2);
+    i_c = chief_oe(3);
+    RAAN_c = chief_oe(4);
+    w_c = chief_oe(5);
+    nu_c = chief_oe(6);
+    
+    a_d = deputy_oe(1);
+    e_d = deputy_oe(2);
+    i_d = deputy_oe(3);
+    RAAN_d = deputy_oe(4);
+    w_d = deputy_oe(5);
+    nu_d = deputy_oe(6);
+
+    M_c = util.TtoM(nu_c, e_c);
+    M_d = util.TtoM(nu_d, e_d);
+    
+    da = (a_d - a_c) / a_c;
+    dl = (M_d + w_d) - (M_c + w_c) + (RAAN_d - RAAN_c)*cos(i_c);
+
+    de_x = e_d*cos(w_d) - e_c*cos(w_c);
+    de_y = e_d*sin(w_d) - e_c*sin(w_c);
+    
+    di_x = i_d - i_c;
+    di_y = (RAAN_d - RAAN_c)*sin(i_c);
+    
+    roe = [da; dl; de_x; de_y; di_x; di_y];
+end
+\end{lstlisting}
+
+\textbf{Modified plotter.m functions}
+\begin{lstlisting}
+function plot_nonlinear_comparison(result, graphics_settings)
+    % Position figure
+    fig_pos = figure('Name', 'Nonlinear_Position_Comparison');
+    
+    % Plot position components
+    subplot(2,2,1);
+    hold on;
+    if isfield(result, 'absolute_state_history')
+        plot(result.absolute_state_history(:,2), result.absolute_state_history(:,1), 'k-', 'LineWidth', 2);
+    end
+    if isfiel ```
+
+function plot_high_eccentricity(result, graphics_settings)
+    % Position figure
+    fig_pos = figure('Name', 'High_Eccentricity_Position');
+    
+    subplot(2,2,1);
+    hold on;
+    legend_names = [];
+    % Plot all deputies - code here similar to plot_deputy
+    % But specifically for high eccentricity case
+    
+    % Save the figure
+    saveas(fig_pos, 'High_Eccentricity_Position.png');
+    
+    % Velocity figure
+    fig_vel = figure('Name', 'High_Eccentricity_Velocity');
+    
+    % Plot velocity components
+    
+    % Save the figure
+    saveas(fig_vel, 'High_Eccentricity_Velocity.png');
+end
+\end{lstlisting}

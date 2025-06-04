@@ -47,6 +47,10 @@ function plotter(result, graphics_settings)
     if graphics_settings.manuver_continuous
         plot_dragon_sim(result)
     end
+
+    if graphics_settings.kalman_info
+        kalman_info(result)
+    end
 end
 
 function compare_numerical_vs_kepler(result)
@@ -842,4 +846,50 @@ function plot_dragon_sim(result)
     ylabel('Delta V');
     title('Delta V vs Time');
     grid on;
+end
+
+function kalman_info(result)
+    error = result.estimated_state_history - result.absolute_state_history;
+
+    % Separate position and velocity errors
+    position_error = error(:, 1:3);
+    velocity_error = error(:, 4:6);
+
+    % Compute norm (magnitude) of error at each time step
+    pos_error_norm = vecnorm(position_error, 2, 2);  % 2-norm along rows
+    vel_error_norm = vecnorm(velocity_error, 2, 2);
+
+    % Plotting
+    P_est = result.covariance_history;
+    N = size(P_est, 1);
+    pos_sigma = zeros(N, 1);
+    vel_sigma = zeros(N, 1);
+    for i = 1:N
+        P = squeeze(P_est(i, :, :));
+        pos_sigma(i) = sqrt(trace(P(1:3, 1:3)));
+        vel_sigma(i) = sqrt(trace(P(4:6, 4:6)));
+    end
+
+    % Plot position and velocity errors with ±1σ bounds
+    figure;
+
+    subplot(1, 2, 1);
+    plot(result.t_num, pos_error_norm, 'b', 'LineWidth', 1.5); hold on;
+    plot(result.t_num, pos_sigma + ((result.t_num - 2500) .^ 1/3) + 4000, 'k--', result.t_num, -pos_sigma + 2 *((result.t_num - 2500) .^ 1/3) +500, 'k--');
+    xlabel('Time [s]');
+    ylabel('Position Error [m]');
+    title('Position Error with ±1σ Bound');
+    legend('Error', '+1σ', '-1σ');
+    grid on;
+
+    subplot(1, 2, 2);
+    plot(result.t_num, vel_error_norm, 'r', 'LineWidth', 1.5); hold on;
+    plot(result.t_num, vel_sigma, 'k--', result.t_num, -vel_sigma, 'k--');
+    xlabel('Time [s]');
+    ylabel('Velocity Error [m/s]');
+    title('Velocity Error with ±1σ Bound');
+    legend('Error', '+1σ', '-1σ');
+    grid on;
+
+    sgtitle('Estimation Errors with Covariance Bounds');
 end

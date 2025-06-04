@@ -1,0 +1,148 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Use the custom AA279D template style
+\usepackage{AA279D_template}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+\bibliography{references.bib}
+
+\allowdisplaybreaks % Can be useful if you are using the align operator, allows equations in an align operator to span multiple pages
+\setcounter{section}{-1} % start Scope at 0
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+
+% User inputs: change as needed for project
+\newcommand{\workingDate}{\textsc{\today}}
+\newcommand{\userName}{Charlie Gordon and Luke Virsik}
+\newcommand{\institution}{Stanford University}
+\newcommand{\theTitle}{AA 279D}
+
+\begin{document}
+
+% Set up the title page
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        
+        \Huge
+        \textbf{AA 279D Project}
+        
+        \vspace{0.5cm}
+        \LARGE
+        \ 
+        
+        \vspace{1.00cm}
+        \textbf{\userName}
+        \vspace{1.00cm}
+        
+        \vfill
+        \begin{figure}[H]
+		\centering 
+		\includegraphics[width = 5.5in]{Figures/Cygnus_LunarStation.jpg}
+		\label{Figure: Title Graphic}
+		\end{figure}
+        \        
+        
+        \Large
+        AA 279D - Spacecraft Formation-Flying and Rendezvous\\
+        Stanford University\\
+        
+    \end{center}
+\end{titlepage}
+
+% Update the revision history with each assignment
+\section*{Revision History}
+
+\begin{table}[ht]
+    \centering
+    % \caption{Summary of project revisions.}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Rev} & \textbf{Changes} \\
+        \hline
+        PS1 & \tabitem Created document \\
+            & \tabitem Added problem set 1 material  \\
+        \hline
+        PS2 & \tabitem Fixed Excessive error between Numerical and Keplerian propogation \\
+        & \tabitem Fixed errors in comparing RTN frames \\
+            & \tabitem Added problem set 2 material  \\
+        \hline
+        PS3 & \tabitem Fixed mistake with manuver plots from PS2 \\
+            & \tabitem Added problem set 3 material  \\
+        \hline
+        PS4 & \tabitem Fixed PS3 errors with eccentric ROE \\
+            & \tabitem Added problem set 4 material  \\
+  
+        \hline
+        PS5            & \tabitem Added problem set 5 material  \\
+      
+        \hline
+        PS6 & \tabitem Fixed PS4 Material \\
+            & \tabitem Added problem set 6 material  \\
+                \hline
+        PS7
+            & \tabitem Added problem set 7 material  \\
+                \hline
+        PS8             & \tabitem Added problem set 8 material  \\
+                \hline
+        PS9 & \tabitem Complete clean up of project for final report\\
+        \bottomrule
+    \end{tabular}
+    \label{table:revision history}
+\end{table}
+
+\newpage
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SCOPE 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Scope}
+This report covers the requirements for the AA279d Spacecraft Formation Flying and Rendezvous project. In the report, we examine the rendezvous phase of a mission with a deputy and a chief spacecraft, where the deputy attempts to bring itself close to the chief.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PROBLEM SETS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{PS1/ps1}
+
+\newpage
+\input{PS2/ps2}
+
+\newpage
+\input{PS3/ps3}
+
+\newpage
+\input{PS4/ps4}{
+
+\newpage
+\input{PS5/ps5}
+
+\newpage
+\input{PS6/ps6}
+
+\newpage
+\input{PS7/ps7}
+
+\newpage
+\input{PS8/ps8}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{References}
+\printbibliography[heading=none]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX 1: CODE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\input{Appendix/code}
+
+\end{document}

@@ -1,0 +1,443 @@
+\subsection{Problem Set 1 Code}
+
+\textbf{constants.m}
+\begin{lstlisting}
+classdef constants
+    properties( Constant = true )
+         mu = 3.986004 * 10^14 % m^3/s^2
+         earth_radius = 6378000 % m
+         J2 = 1.08263 * 10^(-3)
+    end
+ end
+\end{lstlisting}
+
+\textbf{dynamics.m}
+\begin{lstlisting}
+function statedot = dynamics(t, state, simulation_settings)
+% Take in state vector and return statedot vector (accelerations)
+r = state(1:3);
+v = state(4:6);
+
+a = -constants.mu * r / (norm(r) ^ 3);
+
+if simulation_settings.J2
+    a_j2_x = 1.5 * constants.J2 * constants.mu * (constants.earth_radius ^ 2 / norm(r) ^ 5) * (1 - (5 * (r(3) / norm(r)) ^ 2)) * r(1);
+    a_j2_y = 1.5 * constants.J2 * constants.mu * (constants.earth_radius ^ 2 / norm(r) ^ 5) * (1 - (5 * (r(3) / norm(r)) ^ 2)) * r(2);
+    a_j2_z = 1.5 * constants.J2 * constants.mu * (constants.earth_radius ^ 2 / norm(r) ^ 5) * (3 - (5 * (r(3) / norm(r)) ^ 2)) * r(3);
+    a_j2 = [a_j2_x; a_j2_y; a_j2_z];
+    a = a + a_j2;
+end
+
+r_dot = v;
+v_dot = a;
+
+statedot = [r_dot; v_dot];
+
+end
+\end{lstlisting}
+
+\textbf{plotter.m}
+\begin{lstlisting}
+function plotter(result, graphics_settings)
+    if graphics_settings.orbit_eci
+        plot_orbit_eci(result)
+    end
+
+    if graphics_settings.compare_numerical_vs_kepler
+        compare_numerical_vs_kepler(result)
+    end
+
+    if graphics_settings.plot_orbital_elements.base_elems
+        plot_orbital_elements(result, graphics_settings)
+    end
+
+    if graphics_settings.plot_eccentricity_vector
+        plot_eccentricity_vector(result)
+    end
+
+    if graphics_settings.plot_ang_momentum_vector
+        plot_ang_momentum_vector(result)
+    end
+
+    if graphics_settings.plot_specific_energy
+        plot_specific_energy(result)
+    end
+end
+
+function compare_numerical_vs_kepler(result)
+    t = result.t_num;
+    state_history_num = result.state_history_num;
+    t_span = result.t_kep;
+    state_history_kep = result.state_history_kep;
+
+    state_history_kep = interp1(t_span, state_history_kep, t, 'linear');
+
+    error_rtn = zeros(size(state_history_kep));
+    for j = 1:size(state_history_kep, 1)
+        error_rtn(j, :) = util.ECI2RTN(state_history_kep(j, :)) - util.ECI2RTN(state_history_num(j, :));
+    end
+    
+    figure;
+    hold on;
+    plot(t, error_rtn)
+    xlabel('Time (s)');
+    ylabel('Absolute Error (m and m/s)');
+    title('Absolute Error vs Time, RTN Frame');
+    legend('Error R_r', 'Error R_t', 'Error R_n', 'Error V_r', 'Error V_t', 'Error V_n');
+
+end
+
+function plot_orbit_eci(result)
+    state_history = result.state_history_num;
+
+    % Extract positions
+    x = state_history(:, 1);
+    y = state_history(:, 2);
+    z = state_history(:, 3);
+
+    % Show Earth
+    [xe, ye, ze] = sphere(50);
+    xe = constants.earth_radius * xe;
+    ye = constants.earth_radius * ye;
+    ze = constants.earth_radius * ze;
+
+    figure;
+
+    % Plot Earth
+    surf(xe, ye, ze, 'FaceColor', 'blue', 'EdgeColor', 'none');
+    hold on;
+
+    % Plot Orbit
+    plot3(x, y, z, 'c-', 'LineWidth', 2); 
+    grid on;
+    xlabel('X');
+    ylabel('Y');
+    zlabel('Z');
+    title('ECI Trajectory');
+    view(3);
+    axis equal;
+end
+
+function plot_orbital_elements(result, graphics_settings)
+    t = result.t_num;
+    oe_history = result.oe_history;
+
+    a     = oe_history(:, 1);
+    e     = oe_history(:, 2);
+    i     = oe_history(:, 3);
+    RAAN  = oe_history(:, 4);  
+    omega = oe_history(:, 5);
+    nu    = oe_history(:, 6);  
+
+    if graphics_settings.plot_orbital_elements.J2_mean_analytical_solution
+        J2_analytical = zeros(length(result.state_history_num), 2);
+        for j = 1:length(result.state_history_num)
+            K = -(3 * constants.J2 * sqrt(constants.mu) * constants.earth_radius^2) / (2 * ((1 - e(j)^2)^2) * (a(j) ^ (7/2)));
+            RAAN_j2 = result.initial_conditions(4) - (K * t(j) * cos(i(j)));
+            w_j2 = result.initial_conditions(5) + ((K / 2) * t(j) * ((5 * (cos(i(j)) ^ 2)) - 1));
+            J2_analytical(j, :) = [RAAN_j2, w_j2];
+        end
+    end
+
+    figure;
+    tiledlayout(3,2, 'Padding', 'compact', 'TileSpacing', 'compact');
+
+    nexttile;
+    plot(t, a, 'r'); grid on;
+    xlabel('Time'); ylabel('a (km)');
+    title('Semi-Major Axis');
+
+    nexttile;
+    plot(t, e, 'g'); grid on;
+    xlabel('Time'); ylabel('e');
+    title('Eccentricity');
+
+    nexttile;
+    plot(t, rad2deg(i), 'y'); grid on;
+    xlabel('Time'); ylabel('Inclination (deg)');
+    title('Inclination');
+
+    nexttile;
+    hold on;
+    plot(t, rad2deg(RAAN), 'm'); grid on;
+    if graphics_settings.plot_orbital_elements.J2_mean_analytical_solution
+        plot(t, rad2deg(J2_analytical(:,1)), 'k');
+        legend('Numerical', 'J2 Mean Analytical');
+    end
+    xlabel('Time'); ylabel('RAAN (deg)');
+    title('RAAN');
+
+    nexttile;
+    hold on;
+    plot(t, rad2deg(omega), 'c'); grid on;
+    if graphics_settings.plot_orbital_elements.J2_mean_analytical_solution
+        plot(t, rad2deg(J2_analytical(:,2)), 'k');
+        legend('Numerical', 'J2 Mean Analytical');
+    end
+    xlabel('Time'); ylabel('\omega (deg)');
+    title('Argument of Periapsis');
+    
+
+    nexttile;
+    plot(t, rad2deg(nu), 'k'); grid on;
+    xlabel('Time'); ylabel('\nu (deg)');
+    title('True Anomaly');
+end
+
+function plot_eccentricity_vector(result)
+    figure;
+    hold on
+    plot(result.t_num, result.ecc_vector_history(:,1), 'r'); 
+    plot(result.t_num, result.ecc_vector_history(:,2), 'g');
+    plot(result.t_num, result.ecc_vector_history(:,3), 'b');
+    grid on;
+    xlabel('Time (s)'); ylabel('Eccentricity Vector');
+    title('Eccentricity Vector over Time');
+    legend('X_comp', 'Y_comp', 'Z_comp');
+end
+
+function plot_ang_momentum_vector(result)
+    figure;
+    hold on
+    plot(result.t_num, result.ang_mom_history(:,1), 'r'); 
+    plot(result.t_num, result.ang_mom_history(:,2), 'g');
+    plot(result.t_num, result.ang_mom_history(:,3), 'b');
+    grid on;
+    xlabel('Time (s)'); ylabel('Angular Momentum Vector');
+    title('Angular Momentum Vector over Time');
+    legend('X_comp', 'Y_comp', 'Z_comp');
+end
+
+function plot_specific_energy(result)
+    figure;
+    hold on
+    plot(result.t_num, result.energy_history, 'b'); 
+    grid on;
+    xlabel('Time (s)'); ylabel('Specific Energy (J)');
+    title('Specific Energy over Time');
+end
+\end{lstlisting}
+
+\textbf{sim\_config.m}
+\begin{lstlisting}
+% Input initial conditions in orbital elments. Units of meters and degrees
+initial_conditions = [10000000, 0.1, 45, 0, 0, 0]; % OEs
+
+% Input time span of simulation in start:time_step:end format. Units of seconds
+time_span = 0:1:500000;
+
+% Simulation settings
+simulation_settings.numerical_propogation = true;
+simulation_settings.keplerian_propogation = false;
+simulation_settings.J2 = true;
+
+% Set graphics settings for graph output
+graphics_settings.orbit_eci = true;
+graphics_settings.compare_numerical_vs_kepler = false;
+
+graphics_settings.plot_orbital_elements = struct();
+graphics_settings.plot_orbital_elements.base_elems = true;
+graphics_settings.plot_orbital_elements.J2_mean_analytical_solution = false;
+
+graphics_settings.plot_eccentricity_vector = false;
+graphics_settings.plot_ang_momentum_vector = false;
+graphics_settings.plot_specific_energy = false;
+
+
+sim = simulator(initial_conditions, time_span, simulation_settings, graphics_settings);
+sim.run_simulator();
+\end{lstlisting}
+
+\textbf{simulator.m}
+\begin{lstlisting}
+classdef simulator
+    properties
+        initial_conditions
+        time_span
+        simulation_settings
+        graphics_settings
+    end
+
+    methods
+        function self = simulator(initial_conditions, time_span, simulation_settings, graphics_settings)
+            self.initial_conditions = initial_conditions;
+            self.time_span = time_span;
+            self.simulation_settings = simulation_settings;
+            self.graphics_settings = graphics_settings;
+        end
+
+        function run_simulator(self)
+            a = self.initial_conditions(1);
+            e = self.initial_conditions(2);
+            i = deg2rad(self.initial_conditions(3));
+            RAAN = deg2rad(self.initial_conditions(4));
+            w = deg2rad(self.initial_conditions(5));
+            v = deg2rad(self.initial_conditions(6));
+            result.initial_conditions = self.initial_conditions;
+
+            if self.simulation_settings.numerical_propogation
+                initial_state = util.OE2ECI(a, e, i, RAAN, w, v);
+
+                % Perform Simulation
+                options = odeset('RelTol', 1e-7, 'AbsTol', 1e-9);
+                [t, state_history_num] = ode45(@(t, state_history_num) dynamics(t, state_history_num, self.simulation_settings), [0 self.time_span(end)], initial_state, options);
+                result.state_history_num = state_history_num;
+                result.t_num = t;
+
+                % Gather orbital element history and other interesting information
+                oe_history = zeros(length(state_history_num), 6);
+                ecc_vector_history = zeros(length(state_history_num), 3);
+                ang_mom_history = zeros(length(state_history_num), 3);
+                energy_history = zeros(length(state_history_num), 1);
+                for j = 1:length(state_history_num)
+                    oe_history(j, :) = util.ECI2OE(state_history_num(j, :));
+                    ecc_vector_history(j, :) = util.get_ecc_vector(state_history_num(j, :));
+                    ang_mom_history(j, :) = util.get_ang_momentum(state_history_num(j, :));
+                    energy_history(j, :) = util.get_energy(state_history_num(j, :));
+                end
+                result.oe_history = oe_history;
+                result.ecc_vector_history = ecc_vector_history;
+                result.ang_mom_history = ang_mom_history;
+                result.energy_history = energy_history;
+            end
+
+            if self.simulation_settings.keplerian_propogation
+                n = sqrt(constants.mu / a ^ 3);
+                dt = self.time_span(2) - self.time_span(1);
+                state_history_kep = zeros(length(self.time_span), 6);
+                for j=1:length(self.time_span)
+                    state_kep = util.OE2ECI(a, e, i, RAAN, w, v);
+                    state_history_kep(j,:) = state_kep';
+                    E = 2 * atan2(tan(v/2) * sqrt((1 - e) / (1 + e)), 1);
+                    M = E - e*sin(E);
+                    M_new = M + (n * dt);
+                    E_new = util.MtoE(M_new, e, 10^(-6));
+                    v_new = 2 * atan2(sqrt((1 + e) / (1 - e)) * tan(E_new / 2), 1);
+                    v = v_new;
+                end
+                result.state_history_kep = state_history_kep;
+                result.t_kep = self.time_span;
+            end
+            plotter(result, self.graphics_settings)
+        end
+    end
+end
+\end{lstlisting}
+
+\textbf{util.m}
+\begin{lstlisting}
+classdef util
+    methods (Static)
+        function state_eci = OE2ECI(a, e, i, RAAN, w, v)
+            p = a * (1 - e^2);
+            r = p / (1 + e*cos(v));
+            rPQW = [r*cos(v); r*sin(v); 0];
+            vPQW = [sqrt(constants.mu/p) * -sin(v); sqrt(constants.mu/p)*(e + cos(v)); 0];
+        
+            R1 = [cos(-RAAN) sin(-RAAN) 0;...
+                -sin(-RAAN) cos(-RAAN) 0;...
+                0       0       1];
+            R2 = [1  0        0;...
+                0  cos(-i) sin(-i);...
+                0 -sin(-i) cos(-i)];
+            R3 = [cos(-w) sin(-w) 0;...
+                -sin(-w) cos(-w) 0;...
+                0        0        1]; R = R1 * R2 * R3;
+        
+            rECI = R * rPQW;
+            vECI = R * vPQW;
+            state_eci = [rECI; vECI];
+        end
+
+        function H = get_ang_momentum(state)
+            R = state(1:3);
+            V = state(4:6);
+            H = cross(R, V);
+        end
+
+        function E = get_ecc_vector(state)
+            R = state(1:3);
+            V = state(4:6);
+            H = util.get_ang_momentum(state);
+            mu = constants.mu;
+            E = (cross(V,H)/mu)-(R/norm(R));
+        end
+
+        function E = get_energy(state)
+            oes = util.ECI2OE(state);
+            a = oes(1);
+            E = -constants.mu / (2 * a);
+        end
+
+        function OEs = ECI2OE(state)
+            mu = constants.mu;
+            R = state(1:3);
+            V = state(4:6);
+            r = norm(R);
+            
+            %Get to Perifocal
+            H = util.get_ang_momentum(state);
+            h = norm(H);
+            E = util.get_ecc_vector(state);
+            e = norm(E);
+            p = (h)^2/mu;
+            a = p / (1 - e^2);
+            n = sqrt(mu/a^3);
+            E = atan2((dot(R, V)/(n*a^2)), (1-(r/a)));
+            v = 2 * atan(sqrt((1+e)/(1-e)) * tan(E/2));
+            
+            %Find Angles
+            W = [H(1)/h H(2)/h H(3)/h];
+            i = atan2(sqrt(W(1)^2 + W(2)^2), W(3));
+            RAAN = atan2(W(1), -W(2));
+            w = atan2((R(3)/sin(i)), R(1)*cos(RAAN)+R(2)*sin(RAAN)) - v;
+            if rad2deg(w) > 180
+                w = w - 2*pi;
+            end
+            
+            OEs = [a, e, i, RAAN, w, v];
+        end
+
+        function state_pqw = OE2PQW(a, e, i, RAAN, w, v)
+            p = a * (1 - e^2);
+            r = p / (1 + e*cos*(v));
+            P = r*cos(v);
+            Q = r*sin(v);
+            W = 0;
+            rPQW = [P; Q; W];
+            vPQW = sqrt(constants.mu / p) * [-sin(v); e + cos(v); 0];
+            state_pqw = [rPQW; vPQW];
+        end
+
+        function E = MtoE(M, e, err)
+            E = M; N = 0;
+            delta = (E - e*sin(E) - M) / (1 - e*cos(E));
+            while (delta > err || N < 100)
+                delta = (E - e*sin(E) - M) / (1 - e*cos(E));
+                E = E - delta;
+                N = N + 1;
+            end
+        end
+
+        function state_rtn = ECI2RTN(state_eci)
+            r_eci = state_eci(1:3)';
+            v_eci = state_eci(4:6)';
+            n = cross(r_eci, v_eci);
+
+            R = r_eci / norm(r_eci);
+            N = n / norm(n);
+            T = cross(N, R);
+
+            R_eci2rtn = [R, T, N];
+
+            r_rtn = R_eci2rtn * r_eci;
+
+            f_dot = norm(cross(r_eci, v_eci)) / norm(r_eci)^2;
+            w = [0,0,f_dot]';
+            v_rtn = (R_eci2rtn * v_eci) - cross(w, r_rtn);
+
+            state_rtn = [r_rtn; v_rtn];
+        end
+    end
+ end
+\end{lstlisting}

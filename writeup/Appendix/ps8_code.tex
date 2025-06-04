@@ -1,4 +1,8 @@
-classdef our_algorithms
+\subsection{Problem Set 8 Code}
+
+\textbf{E Kalman Filter}
+\begin{lstlisting}
+    classdef our_algorithms
     properties
         estimated_state_history = zeros(1, 6)
     end
@@ -36,7 +40,7 @@ classdef our_algorithms
             A = our_algorithms.compute_linearized_dynamics(previous_state, simulation_settings);
             B = our_algorithms.compute_linearized_control(previous_state);
             F = eye(6) +  A * dt;
-            x_0 = previous_state;
+            x_0 = F * previous_state + B * control_input;
             P_0 = F * P * F' + Q;
 
             % Update Step
@@ -58,7 +62,7 @@ classdef our_algorithms
             measurement(1:3) = truth_state(1:3) + pos_noise;  % add noise to position
             measurement(4:6) = truth_state(4:6) + vel_noise;  % add noise to velocity
 
-            pos_noise_std = 0.1;  % meters
+            pos_noise_std = 1.0;  % meters
             vel_noise_std = 0.1;  % meters/second
             pos_noise = pos_noise_std * randn(1, 3)';
             vel_noise = vel_noise_std * randn(1, 3)';
@@ -87,12 +91,6 @@ classdef our_algorithms
                 A(:,i) = ((statedot_plus - statedot_minus) / (2 * h));
             end
         end
-
-        function B = compute_linearized_control(truth_state)
-            B = zeros(6, 3);
-            B(4, 1) = 1;
-            B(5, 2) = 1;
-            B(6, 3) = 1;
-        end
     end
 end
+\end{lstlisting}

@@ -10,6 +10,8 @@ classdef simulator < handle
         previous_time
         P
         estimated_state_history
+        covariance_history
+        delta_v_tracker
     end
 
     methods
@@ -24,7 +26,8 @@ classdef simulator < handle
             self.graphics_settings = graphics_settings;
             self.current_step = 0;
             self.previous_time = 0;
-            self.P = eye(6)
+            self.P = eye(6);
+            delta_v_tracker = 0;
         end
 
         function run_simulator(self)
@@ -48,7 +51,10 @@ classdef simulator < handle
             [result.t_num, result.chief_history_num] = ode45(@(t, state_history_num) dynamics.two_body_dynamics(t, state_history_num, self.simulation_settings), self.time_span, chief_initial_state_eci, options);            
 
             if self.simulation_settings.simulation_with_flight_computer
+                result.dv = zeros(1,3);
+                self.delta_v_tracker = 0;
                 self.estimated_state_history = zeros(size(result.chief_history_num));
+                self.covariance_history = zeros(length(result.chief_history_num), 6, 6);
                 initial_conditions_deputy_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
                 options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
                 [~, deputy_state_history] = ode45(@(t, state) self.wrapper_state_to_stateDot(t, state, result), self.time_span, initial_conditions_deputy_eci, options);
@@ -56,8 +62,8 @@ classdef simulator < handle
                 % Transform deputy orbit to RTN frame relative to chief
                 result.absolute_state_history = util.ECI2RTN_history(deputy_state_history, result.chief_history_num);
                 result.deputy_state_history_eci = deputy_state_history;  
-                result.estimated_state_history = self.estimated_state_history;
-          
+                
+                result.estimated_state_history = util.ECI2RTN_history(self.estimated_state_history, result.chief_history_num);
 
             elseif self.simulation_settings.manuver_instant
                 % Initialize Information
@@ -252,17 +258,33 @@ classdef simulator < handle
         function statedot = wrapper_state_to_stateDot(self, t, state, result)
             chief_state_history = result.chief_history_num;
             t_vec = result.t_num;
+            last_control_time = -inf;
+            
             if (t == 0) || (t >= t_vec(self.current_step + 1) && self.previous_time < t_vec(self.current_step + 1))
                 [estimated_state, self.P] = our_algorithms.state_estimation(state, chief_state_history(self.current_step+1, :), self.dt, self.P, self.simulation_settings);
                 
-                
-                self.estimated_state_history(self.current_step + 1, :) = util.ECI2RTN(estimated_state, chief_state_history(self.current_step+1, :)')';
+                self.estimated_state_history(self.current_step + 1, :) = estimated_state;
+                self.covariance_history(self.current_step + 1, :, :) = self.P;
 
+
+
+                % % Control Alg
+                % if t - last_control_time >= 10
+                %     chief_eci = chief_state_history(self.current_step+1, :)';
+                %     deputy_rtn = util.ECI2RTN(state, chief_eci);
+                %     result.dv = [result.dv; self.delta_v_tracker*ones(1,3)];
+                %     burn_dv = 5;
+                %     old_v = deputy_rtn(4:6);
+                %     deputy_rtn(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
+                %     self.delta_v_tracker = self.delta_v_tracker + norm(deputy_rtn(4:6) - old_v);
+                %     state = util.RTN2ECI(deputy_rtn, chief_eci);
+                % end
+
+                
                 if t ~= t_vec(end)
                     self.current_step = self.current_step + 1;
                 end
-                self.previous_time = t;  
-                
+                self.previous_time = t;                  
             end
          
             statedot = dynamics.two_body_dynamics(t, state, self.simulation_settings);
