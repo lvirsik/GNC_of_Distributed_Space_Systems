@@ -12,6 +12,8 @@ classdef simulator < handle
         estimated_state_history
         covariance_history
         delta_v_tracker
+        last_control_time
+        acceleration
     end
 
     methods
@@ -24,10 +26,12 @@ classdef simulator < handle
             self.time_span = time_span;
             self.simulation_settings = simulation_settings;
             self.graphics_settings = graphics_settings;
-            self.current_step = 0;
+            self.current_step = 1;
             self.previous_time = 0;
-            self.P = eye(6);
-            delta_v_tracker = 0;
+            self.P = diag([1e4, 1e4, 1e4, 1, 1, 1]);
+            self.delta_v_tracker = 0;
+            self.last_control_time = -inf;
+            self.acceleration = [0;0;0];
         end
 
         function run_simulator(self)
@@ -56,14 +60,27 @@ classdef simulator < handle
                 self.estimated_state_history = zeros(size(result.chief_history_num));
                 self.covariance_history = zeros(length(result.chief_history_num), 6, 6);
                 initial_conditions_deputy_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
-                options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
-                [~, deputy_state_history] = ode45(@(t, state) self.wrapper_state_to_stateDot(t, state, result), self.time_span, initial_conditions_deputy_eci, options);
+                options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12, 'MaxStep', self.dt);
+                [time_output, deputy_state_history] = ode45(@(t, state) self.wrapper_state_to_stateDot(t, state, result), self.time_span, initial_conditions_deputy_eci, options);
+
+                % Compute velocity magnitude at each time step
+                velocity_magnitude = vecnorm(deputy_state_history(:, 4:6), 2, 2);  % 2-norm across rows
+
+                % Plot velocity magnitude vs time
+                figure;
+                plot(time_output, velocity_magnitude, 'LineWidth', 2);
+                xlabel('Time [s]');
+                ylabel('‖Velocity‖ [km/s]');
+                title('Deputy Velocity Magnitude Over Time');
+                grid on;
                 
                 % Transform deputy orbit to RTN frame relative to chief
                 result.absolute_state_history = util.ECI2RTN_history(deputy_state_history, result.chief_history_num);
                 result.deputy_state_history_eci = deputy_state_history;  
                 
                 result.estimated_state_history = util.ECI2RTN_history(self.estimated_state_history, result.chief_history_num);
+                result.covariance_history = self.covariance_history;
+                result.estimated_state_history(end,:) = result.estimated_state_history(end-1,:);
 
             elseif self.simulation_settings.manuver_instant
                 % Initialize Information
@@ -239,7 +256,7 @@ classdef simulator < handle
                 deputy_rtn = util.ECI2RTN(deputy_eci, chief_eci);
                 
                 result.dv = [result.dv; dv_tracker*ones(size(new_t))];
-                burn_dv = 0.1;
+                burn_dv = 0.01;
                 old_v = deputy_rtn(4:6);
                 deputy_rtn(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
                 dv_tracker = dv_tracker + norm(deputy_rtn(4:6) - old_v);
@@ -258,36 +275,46 @@ classdef simulator < handle
         function statedot = wrapper_state_to_stateDot(self, t, state, result)
             chief_state_history = result.chief_history_num;
             t_vec = result.t_num;
-            last_control_time = -inf;
-            
+            control_check = false;            
+
             if (t == 0) || (t >= t_vec(self.current_step + 1) && self.previous_time < t_vec(self.current_step + 1))
-                [estimated_state, self.P] = our_algorithms.state_estimation(state, chief_state_history(self.current_step+1, :), self.dt, self.P, self.simulation_settings);
-                
-                self.estimated_state_history(self.current_step + 1, :) = estimated_state;
-                self.covariance_history(self.current_step + 1, :, :) = self.P;
+                if t == 0
+                    [estimated_state, self.P] = our_algorithms.state_estimation(state, state, chief_state_history(1, :), self.dt, self.P, self.simulation_settings);
+                else
+                    [estimated_state, self.P] = our_algorithms.state_estimation(self.estimated_state_history(self.current_step-1, :)', state, chief_state_history(self.current_step-1, :), self.dt, self.P, self.simulation_settings);
+                end
+                self.estimated_state_history(self.current_step, :) = estimated_state;
+                self.covariance_history(self.current_step, :, :) = self.P;
 
 
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % CONTROL ALG
+                chief_eci = chief_state_history(self.current_step+1, :)';
+                deputy_rtn = util.ECI2RTN(state, chief_eci);
+                result.dv = [result.dv; self.delta_v_tracker*ones(1,3)];
+                burn_dv = 0.000001;
+                old_v = deputy_rtn(4:6);
 
-                % % Control Alg
-                % if t - last_control_time >= 10
-                %     chief_eci = chief_state_history(self.current_step+1, :)';
-                %     deputy_rtn = util.ECI2RTN(state, chief_eci);
-                %     result.dv = [result.dv; self.delta_v_tracker*ones(1,3)];
-                %     burn_dv = 5;
-                %     old_v = deputy_rtn(4:6);
-                %     deputy_rtn(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
-                %     self.delta_v_tracker = self.delta_v_tracker + norm(deputy_rtn(4:6) - old_v);
-                %     state = util.RTN2ECI(deputy_rtn, chief_eci);
-                % end
+                deputy_rtn_new = deputy_rtn;
+                deputy_rtn_new(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
+                self.delta_v_tracker = self.delta_v_tracker + norm(deputy_rtn(4:6) - old_v);
 
-                
+                old_eci = state;
+                new_eci = util.RTN2ECI(deputy_rtn_new, chief_eci);
+                eci_diff = new_eci - old_eci;
+                v_diff = eci_diff(4:6);
+                self.acceleration = v_diff / self.dt;
+
+                self.last_control_time = t;
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
                 if t ~= t_vec(end)
                     self.current_step = self.current_step + 1;
                 end
-                self.previous_time = t;                  
+                self.previous_time = t;             
             end
-         
-            statedot = dynamics.two_body_dynamics(t, state, self.simulation_settings);
+            
+            statedot = dynamics.two_body_dynamics_control(t, state, self.simulation_settings, self.acceleration);
         end
     end
 end

@@ -3,28 +3,22 @@ classdef our_algorithms
         estimated_state_history = zeros(1, 6)
     end
     methods ( Static )
-        function [estimated_state, covariance] = state_estimation(truth_state, chief_state, dt, P, simulation_settings)
+        function [estimated_state, covariance] = state_estimation(estimated_state, truth_state, chief_state, dt, P, simulation_settings)
         
             % Measurements: ECI Position, ECI Velocity, RTN Position, RTN Velocity
             measurement = our_algorithms.sensor_measurements(truth_state, chief_state);
             
             % Kalman Filter
-            [estimated_state, covariance] = our_algorithms.kalman_filter(measurement, truth_state, chief_state, dt, P, simulation_settings);
+            [estimated_state, covariance] = our_algorithms.kalman_filter(measurement, estimated_state, chief_state, dt, P, simulation_settings);
         end
 
         function [x_1, P_1] = kalman_filter(measurement, previous_state, chief_state, dt, P, simulation_settings)
 
-            Q = eye(6);
-            R = eye(12);
+            Q = diag([1e1, 1e1, 1e1, 1e3, 1e3, 1e3]);
+            R = eye(6);
 
             % Measurements: ECI Position, ECI Velocity, RTN Position, RTN Velocity
             H = [[1,0,0,0,0,0];
-                [0,1,0,0,0,0];
-                [0,0,1,0,0,0];
-                [0,0,0,1,0,0];
-                [0,0,0,0,1,0];
-                [0,0,0,0,0,1];
-                [1,0,0,0,0,0];
                 [0,1,0,0,0,0];
                 [0,0,1,0,0,0];
                 [0,0,0,1,0,0];
@@ -36,7 +30,7 @@ classdef our_algorithms
             A = our_algorithms.compute_linearized_dynamics(previous_state, simulation_settings);
             B = our_algorithms.compute_linearized_control(previous_state);
             F = eye(6) +  A * dt;
-            x_0 = previous_state;
+            x_0 = F * previous_state;
             P_0 = F * P * F' + Q;
 
             % Update Step
@@ -57,18 +51,6 @@ classdef our_algorithms
             measurement = truth_state;
             measurement(1:3) = truth_state(1:3) + pos_noise;  % add noise to position
             measurement(4:6) = truth_state(4:6) + vel_noise;  % add noise to velocity
-
-            pos_noise_std = 0.1;  % meters
-            vel_noise_std = 0.1;  % meters/second
-            pos_noise = pos_noise_std * randn(1, 3)';
-            vel_noise = vel_noise_std * randn(1, 3)';
-            
-            truth_rtn = util.ECI2RTN(truth_state, chief_state');
-            measurement_rtn = truth_rtn;
-            measurement_rtn(1:3) = truth_rtn(1:3) + pos_noise;  % add noise to position
-            measurement_rtn(4:6) = truth_rtn(4:6) + vel_noise;  % add noise to velocity
-
-            measurement = [measurement; util.RTN2ECI(measurement_rtn, chief_state')];
         end
 
         function A = compute_linearized_dynamics(truth_state, simulation_settings)

@@ -6,7 +6,7 @@ initial_conditions_deputy = [25; 25; 0; 5; 5; 1];
 
 % Time step and number of orbits
 num_orbits = 1;
-time_step = 10;
+time_step = 1;
 
 % Simulation settings
 
@@ -35,7 +35,7 @@ graphics_settings.plot_deputy.hcw = false;
 graphics_settings.plot_deputy.ya = false;
 graphics_settings.plot_deputy.roe_circular  = false;
 graphics_settings.plot_deputy.roe_eccentric = false;
-graphics_settings.plot_deputy.estimated_state = true;
+graphics_settings.plot_deputy.estimated_state = false;
 
 graphics_settings.plot_quasi_oes = false;
 graphics_settings.plot_quasi_roes = false;

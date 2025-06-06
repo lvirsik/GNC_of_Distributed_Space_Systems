@@ -849,47 +849,116 @@ function plot_dragon_sim(result)
 end
 
 function kalman_info(result)
-    error = result.estimated_state_history - result.absolute_state_history;
+    % Extract core data
+    t = result.t_num;
+    x_true = result.absolute_state_history;
+    x_est = result.estimated_state_history;
+    P_hist = result.covariance_history;
+    N = length(t);
+    
+    % === 1. True vs Estimated States ===
+    figure;
+    for i = 1:6
+        subplot(3, 2, i);
+        plot(t, x_true(:, i), 'k', 'LineWidth', 1.2); hold on;
+        plot(t, x_est(:, i), 'b--', 'LineWidth', 1.2);
+        xlabel('Time [s]');
+        ylabel(sprintf('State %d', i));
+        legend('True', 'Estimated');
+        grid on;
+    end
+    sgtitle('True vs Estimated States');
 
-    % Separate position and velocity errors
-    position_error = error(:, 1:3);
-    velocity_error = error(:, 4:6);
-
-    % Compute norm (magnitude) of error at each time step
-    pos_error_norm = vecnorm(position_error, 2, 2);  % 2-norm along rows
-    vel_error_norm = vecnorm(velocity_error, 2, 2);
-
-    % Plotting
-    P_est = result.covariance_history;
-    N = size(P_est, 1);
-    pos_sigma = zeros(N, 1);
-    vel_sigma = zeros(N, 1);
+    % === 2. Estimation Errors & ±1σ Covariance Bounds per component ===
+    error = x_est - x_true;
+    
+    % Preallocate sigmas for pos(3) and vel(3)
+    pos_sigma = zeros(N, 3);
+    vel_sigma = zeros(N, 3);
+    
     for i = 1:N
-        P = squeeze(P_est(i, :, :));
-        pos_sigma(i) = sqrt(trace(P(1:3, 1:3)));
-        vel_sigma(i) = sqrt(trace(P(4:6, 4:6)));
+        P = squeeze(P_hist(i, :, :));
+        % Position std dev from diagonal elements
+        pos_sigma(i, :) = sqrt(diag(P(1:3, 1:3)))';
+        % Velocity std dev from diagonal elements
+        vel_sigma(i, :) = sqrt(diag(P(4:6, 4:6)))';
+    end
+    
+    % Plot position errors with ±1σ bounds
+    figure;
+    for j = 1:3
+        subplot(3,1,j);
+        plot(t, error(:, j), 'b'); hold on;
+        plot(t, pos_sigma(:, j), 'k--');
+        plot(t, -pos_sigma(:, j), 'k--');
+        xlabel('Time [s]');
+        ylabel(sprintf('Position Error State %d [m]', j));
+        title(sprintf('Position Error Component %d with ±1σ Bounds', j));
+        grid on;
+    end
+    sgtitle('Position Errors with ±1σ Bounds');
+    
+    % Plot velocity errors with ±1σ bounds
+    figure;
+    for j = 1:3
+        subplot(3,1,j);
+        plot(t, error(:, j+3), 'r'); hold on;
+        plot(t, vel_sigma(:, j), 'k--');
+        plot(t, -vel_sigma(:, j), 'k--');
+        xlabel('Time [s]');
+        ylabel(sprintf('Velocity Error State %d [m/s]', j));
+        title(sprintf('Velocity Error Component %d with ±1σ Bounds', j));
+        grid on;
+    end
+    sgtitle('Velocity Errors with ±1σ Bounds');
+
+    % === 3. Steady-State Statistics (last 10%) ===
+    steady_indices = round(0.9 * N):N;
+    mean_error = mean(error(steady_indices, :));
+    std_error = std(error(steady_indices, :));
+
+    fprintf('\nSteady-State Error Stats (last 10%% of simulation):\n');
+    for i = 1:6
+        fprintf('State %d: Mean = %.4f, Std = %.4f\n', i, mean_error(i), std_error(i));
     end
 
-    % Plot position and velocity errors with ±1σ bounds
-    figure;
+    % === 4. Residuals vs Injected Noise (optional) ===
+    if isfield(result, 'pre_fit_residuals') && isfield(result, 'post_fit_residuals')
+        pre_fit = result.pre_fit_residuals;
+        post_fit = result.post_fit_residuals;
 
-    subplot(1, 2, 1);
-    plot(result.t_num, pos_error_norm, 'b', 'LineWidth', 1.5); hold on;
-    plot(result.t_num, pos_sigma + ((result.t_num - 2500) .^ 1/3) + 4000, 'k--', result.t_num, -pos_sigma + 2 *((result.t_num - 2500) .^ 1/3) +500, 'k--');
-    xlabel('Time [s]');
-    ylabel('Position Error [m]');
-    title('Position Error with ±1σ Bound');
-    legend('Error', '+1σ', '-1σ');
-    grid on;
+        figure;
+        subplot(2,1,1);
+        plot(t, pre_fit, 'b'); hold on;
+        if isfield(result, 'injected_noise_std')
+            noise_std = result.injected_noise_std;
+            if isscalar(noise_std)
+                plot(t, noise_std * ones(size(t)), 'k--');
+                plot(t, -noise_std * ones(size(t)), 'k--');
+            else
+                plot(t, noise_std, 'k--');
+                plot(t, -noise_std, 'k--');
+            end
+        end
+        xlabel('Time [s]'); ylabel('Pre-fit Residual');
+        title('Pre-fit Residuals vs Injected Noise');
+        grid on;
 
-    subplot(1, 2, 2);
-    plot(result.t_num, vel_error_norm, 'r', 'LineWidth', 1.5); hold on;
-    plot(result.t_num, vel_sigma, 'k--', result.t_num, -vel_sigma, 'k--');
-    xlabel('Time [s]');
-    ylabel('Velocity Error [m/s]');
-    title('Velocity Error with ±1σ Bound');
-    legend('Error', '+1σ', '-1σ');
-    grid on;
+        subplot(2,1,2);
+        plot(t, post_fit, 'r'); hold on;
+        if isfield(result, 'injected_noise_std')
+            if isscalar(noise_std)
+                plot(t, noise_std * ones(size(t)), 'k--');
+                plot(t, -noise_std * ones(size(t)), 'k--');
+            else
+                plot(t, noise_std, 'k--');
+                plot(t, -noise_std, 'k--');
+            end
+        end
+        xlabel('Time [s]'); ylabel('Post-fit Residual');
+        title('Post-fit Residuals vs Injected Noise');
+        grid on;
 
-    sgtitle('Estimation Errors with Covariance Bounds');
+        sgtitle('Residuals Analysis');
+    end
 end
