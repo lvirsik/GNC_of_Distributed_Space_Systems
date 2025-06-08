@@ -813,7 +813,6 @@ function plot_quasi_both(result)
 
     figure;
     tiledlayout(1,3, 'Padding', 'compact', 'TileSpacing', 'compact');
-    % Plot Δex vs Δey
     nexttile;
     hold on
     plot(dex, dey, 'b');
@@ -821,7 +820,6 @@ function plot_quasi_both(result)
     xlabel('\Delta e_x'); ylabel('\Delta e_y');
     title('\Delta e_x vs \Delta e_y'); grid on; axis equal;
 
-    % Plot Δix vs Δiy
     nexttile;
     hold on
     plot(dix, diy, 'r');
@@ -829,7 +827,6 @@ function plot_quasi_both(result)
     xlabel('\Delta i_x'); ylabel('\Delta i_y');
     title('\Delta i_x vs \Delta i_y'); grid on; axis equal;
 
-    % Plot Δl vs Δa
     nexttile;
     hold on
     plot(dl, da, 'k');
@@ -856,7 +853,6 @@ function kalman_info(result)
     P_hist = result.covariance_history;
     N = length(t);
     
-    % === 1. True vs Estimated States ===
     figure;
     for i = 1:6
         subplot(3, 2, i);
@@ -869,22 +865,18 @@ function kalman_info(result)
     end
     sgtitle('True vs Estimated States');
 
-    % === 2. Estimation Errors & ±1σ Covariance Bounds per component ===
     error = x_est - x_true;
     
-    % Preallocate sigmas for pos(3) and vel(3)
     pos_sigma = zeros(N, 3);
     vel_sigma = zeros(N, 3);
     
     for i = 1:N
         P = squeeze(P_hist(i, :, :));
-        % Position std dev from diagonal elements
         pos_sigma(i, :) = sqrt(diag(P(1:3, 1:3)))';
-        % Velocity std dev from diagonal elements
         vel_sigma(i, :) = sqrt(diag(P(4:6, 4:6)))';
     end
     
-    % Plot position errors with ±1σ bounds
+
     figure;
     for j = 1:3
         subplot(3,1,j);
@@ -897,8 +889,7 @@ function kalman_info(result)
         grid on;
     end
     sgtitle('Position Errors with ±1σ Bounds');
-    
-    % Plot velocity errors with ±1σ bounds
+
     figure;
     for j = 1:3
         subplot(3,1,j);
@@ -912,7 +903,6 @@ function kalman_info(result)
     end
     sgtitle('Velocity Errors with ±1σ Bounds');
 
-    % === 3. Steady-State Statistics (last 10%) ===
     steady_indices = round(0.9 * N):N;
     mean_error = mean(error(steady_indices, :));
     std_error = std(error(steady_indices, :));
@@ -922,7 +912,6 @@ function kalman_info(result)
         fprintf('State %d: Mean = %.4f, Std = %.4f\n', i, mean_error(i), std_error(i));
     end
 
-    % === 4. Residuals vs Injected Noise (optional) ===
     if isfield(result, 'pre_fit_residuals') && isfield(result, 'post_fit_residuals')
         pre_fit = result.pre_fit_residuals;
         post_fit = result.post_fit_residuals;

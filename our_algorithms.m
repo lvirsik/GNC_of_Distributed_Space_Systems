@@ -3,16 +3,16 @@ classdef our_algorithms
         estimated_state_history = zeros(1, 6)
     end
     methods ( Static )
-        function [estimated_state, covariance] = state_estimation(estimated_state, truth_state, chief_state, dt, P, simulation_settings)
+        function [estimated_state, covariance] = state_estimation(estimated_state, truth_state, chief_state, dt, P, simulation_settings, control_input)
         
             % Measurements: ECI Position, ECI Velocity, RTN Position, RTN Velocity
             measurement = our_algorithms.sensor_measurements(truth_state, chief_state);
             
             % Kalman Filter
-            [estimated_state, covariance] = our_algorithms.kalman_filter(measurement, estimated_state, chief_state, dt, P, simulation_settings);
+            [estimated_state, covariance] = our_algorithms.kalman_filter(measurement, estimated_state, chief_state, dt, P, simulation_settings, control_input);
         end
 
-        function [x_1, P_1] = kalman_filter(measurement, previous_state, chief_state, dt, P, simulation_settings)
+        function [x_1, P_1] = kalman_filter(measurement, previous_state, chief_state, dt, P, simulation_settings, control_input)
 
             Q = diag([1e1, 1e1, 1e1, 1e3, 1e3, 1e3]);
             R = eye(6);
@@ -29,7 +29,7 @@ classdef our_algorithms
             % Predict Step
             A = our_algorithms.compute_linearized_dynamics(previous_state, simulation_settings);
             B = our_algorithms.compute_linearized_control(previous_state);
-            F = eye(6) +  A * dt;
+            F = eye(6) +  A * dt + B * u;
             x_0 = F * previous_state;
             P_0 = F * P * F' + Q;
 

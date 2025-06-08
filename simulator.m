@@ -12,8 +12,10 @@ classdef simulator < handle
         estimated_state_history
         covariance_history
         delta_v_tracker
+        delta_v_history
         last_control_time
         acceleration
+        control_counter
     end
 
     methods
@@ -32,6 +34,8 @@ classdef simulator < handle
             self.delta_v_tracker = 0;
             self.last_control_time = -inf;
             self.acceleration = [0;0;0];
+            self.control_counter = 0;
+            self.delta_v_history = [0];
         end
 
         function run_simulator(self)
@@ -65,18 +69,12 @@ classdef simulator < handle
 
                 % Compute velocity magnitude at each time step
                 velocity_magnitude = vecnorm(deputy_state_history(:, 4:6), 2, 2);  % 2-norm across rows
-
-                % Plot velocity magnitude vs time
-                figure;
-                plot(time_output, velocity_magnitude, 'LineWidth', 2);
-                xlabel('Time [s]');
-                ylabel('‖Velocity‖ [km/s]');
-                title('Deputy Velocity Magnitude Over Time');
-                grid on;
                 
                 % Transform deputy orbit to RTN frame relative to chief
                 result.absolute_state_history = util.ECI2RTN_history(deputy_state_history, result.chief_history_num);
                 result.deputy_state_history_eci = deputy_state_history;  
+                result.delta_v_tracker = self.delta_v_tracker;
+                result.delta_v_history = self.delta_v_history;
                 
                 result.estimated_state_history = util.ECI2RTN_history(self.estimated_state_history, result.chief_history_num);
                 result.covariance_history = self.covariance_history;
@@ -186,7 +184,7 @@ classdef simulator < handle
                 if self.simulation_settings.roe_eccentric_deputy
                     roe_eccentric_deputy_state_history = zeros(length(self.time_span), 6);
                     deputy_initial_state_eci = util.RTN2ECI(self.initial_conditions_deputy, chief_initial_state_eci);
-                    initial_roe = util.ECI2ROE(chief_initial_state_eci, deputy_initial_state_eci)
+                    initial_roe = util.ECI2ROE(chief_initial_state_eci, deputy_initial_state_eci);
                     for idx = 1:length(self.time_span)
                         chief_oes = util.ECI2OE(result.chief_history_num(idx, :));
                         roe_eccentric_deputy_state_history(idx,:) = dynamics.propagate_with_roe_eccentric(self.time_span(idx), [a, e, incl, RAAN, w, v], initial_roe, chief_oes);
@@ -274,8 +272,7 @@ classdef simulator < handle
 
         function statedot = wrapper_state_to_stateDot(self, t, state, result)
             chief_state_history = result.chief_history_num;
-            t_vec = result.t_num;
-            control_check = false;            
+            t_vec = result.t_num;      
 
             if (t == 0) || (t >= t_vec(self.current_step + 1) && self.previous_time < t_vec(self.current_step + 1))
                 if t == 0
@@ -292,12 +289,31 @@ classdef simulator < handle
                 chief_eci = chief_state_history(self.current_step+1, :)';
                 deputy_rtn = util.ECI2RTN(state, chief_eci);
                 result.dv = [result.dv; self.delta_v_tracker*ones(1,3)];
-                burn_dv = 0.000001;
+                thrust = 0.01;
                 old_v = deputy_rtn(4:6);
 
                 deputy_rtn_new = deputy_rtn;
-                deputy_rtn_new(4:6) = burn_dv * -deputy_rtn(1:3) / norm(deputy_rtn(1:3));
-                self.delta_v_tracker = self.delta_v_tracker + norm(deputy_rtn(4:6) - old_v);
+                duration = 100;
+
+                if self.control_counter == 0
+                    self.acceleration = [0;0;0];
+                end
+
+                if self.control_counter <= duration * 0.5
+                    deputy_rtn_new(4:6) = deputy_rtn_new(4:6) + thrust *(-deputy_rtn(4:6));
+                    self.control_counter = self.control_counter + 1;
+                elseif self.control_counter <= duration * 0.75
+                    deputy_rtn_new(4:6) = deputy_rtn_new(4:6) + thrust * 5 *(-deputy_rtn(1:3) / norm(deputy_rtn(1:3)));
+                    self.control_counter = self.control_counter + 1;
+                else
+                    self.control_counter = self.control_counter + 1;
+                    if self.control_counter >= duration
+                        self.control_counter = 0;
+                    end
+                end
+                
+                self.delta_v_tracker = self.delta_v_tracker + norm(deputy_rtn_new(4:6) - deputy_rtn(4:6));
+                self.delta_v_history = [self.delta_v_history; self.delta_v_history(end) + norm(deputy_rtn_new(4:6) - deputy_rtn(4:6))];
 
                 old_eci = state;
                 new_eci = util.RTN2ECI(deputy_rtn_new, chief_eci);
